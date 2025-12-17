@@ -5,6 +5,8 @@ import { IconSearch, IconDatabase, IconCheck, IconZap, IconTrendingUp, IconShiel
 import CodeSnippet from '../components/CodeSnippet';
 
 
+import ChatWindow from '../components/ChatWindow';
+
 const Landing = () => {
     const [activeTab, setActiveTab] = useState('claude'); // 'claude', 'codex', 'cursor', 'antigravity'
     const mcpUrl = "https://mcp.sifter.dev/v1/stylus";
@@ -78,7 +80,7 @@ const Landing = () => {
                         marginBottom: '1rem',
                         lineHeight: 1.1
                     }}>
-                        Add <span className="text-gradient">Sifter</span> to your IDE
+                        Research assistant for <span className="text-gradient">Arbitrum Stylus</span>
                     </h1>
 
                     <p className="animate-fade-in delay-100" style={{
@@ -86,124 +88,131 @@ const Landing = () => {
                         color: 'var(--color-text-secondary)',
                         marginBottom: '3rem',
                         maxWidth: '600px',
-                        margin: '0 auto 2.5rem'
+                        margin: '0 auto 2.5rem',
+                        lineHeight: 1.6
                     }}>
-                        We sift through official and community Arbitrum Stylus resources to surface answers and references
+                        We sift through official and community resources to surface answers with references
                     </p>
 
-                    <div className="animate-fade-in delay-200" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <div className="animate-fade-in delay-200" style={{ width: '100%', maxWidth: '800px', margin: '0 auto', textAlign: 'left' }}>
+                        <ChatWindow />
+                    </div>
 
-                        {/* Tabs - Segmented Control */}
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-                            <div style={{
-                                background: '#e2e8f0',
-                                padding: '4px',
-                                borderRadius: '8px',
-                                display: 'inline-flex',
-                                gap: '4px',
-                                flexWrap: 'wrap',
-                                justifyContent: 'center'
-                            }}>
-                                <TabButton label="Claude Code" isActive={activeTab === 'claude'} onClick={() => setActiveTab('claude')} />
-                                <TabButton label="Codex" isActive={activeTab === 'codex'} onClick={() => setActiveTab('codex')} />
-                                <TabButton label="Cursor" isActive={activeTab === 'cursor'} onClick={() => setActiveTab('cursor')} />
-                                <TabButton label="Antigravity" isActive={activeTab === 'antigravity'} onClick={() => setActiveTab('antigravity')} />
-                            </div>
-                        </div>
+                </div>
+            </section>
 
-                        {/* Tab Content */}
-                        <div className="card" style={{ minHeight: '300px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', textAlign: 'left' }}>
+            {/* Installation Instructions */}
+            <section className="section" style={{ paddingTop: '0' }}>
+                <div className="container" style={{ maxWidth: '800px' }}>
+                    <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.01em' }}>Connect to Sifter from your IDE</h2>
+                    </div>
 
-                            {/* CLAUDE CODE */}
-                            {activeTab === 'claude' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open your configuration file</p>
-                                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                            Open your terminal
-                                        </p>
-                                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                            Edit <code>~/.claude.json</code> (MacOS/Linux) or <code>%APPDATA%\Claude\claude.json</code> (Windows)
-                                        </p>
-                                        <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Add this snippet inside "mcpServers"</p>
-                                        <CodeSnippet
-                                            code={`"sifter": {
-  "url": "${mcpUrl}",
-  "transport": "sse"
-}`}
-                                            language="json"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* CODEX */}
-                            {activeTab === 'codex' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open your configuration file</p>
-                                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                            Open your terminal
-                                        </p>
-                                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                            Edit <code>~/.codex/config.toml</code>
-                                        </p>
-                                        <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Append this block</p>
-                                        <CodeSnippet
-                                            code={`[mcpServers.sifter]
-url = "${mcpUrl}"
-transport = "sse"`}
-                                            language="toml"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* CURSOR */}
-                            {activeTab === 'cursor' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <ol style={{ paddingLeft: '1.5rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                            <li>Navigate to <strong>Cursor Settings</strong> (top right gear icon) → <strong>Features</strong> → <strong>MCP Services</strong></li>
-                                            <li>Click <strong>+ Add New MCP Server</strong></li>
-                                            <li>Set Type to <strong>SSE</strong></li>
-                                            <li>Paste the URL below:</li>
-                                        </ol>
-                                        <CopyModule text={mcpUrl} />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ANTIGRAVITY */}
-                            {activeTab === 'antigravity' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open MCP Settings</p>
-                                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                            Click the <strong>MCP Store</strong> icon in the sidebar
-                                        </p>
-                                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                            Click <strong>Manage Servers</strong> then select <strong>Edit mcp_config.json</strong>
-                                        </p>
-                                        <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Add to your config object</p>
-                                        <CodeSnippet
-                                            code={`"sifter": {
-  "url": "${mcpUrl}",
-  "transport": "sse"
-}`}
-                                            language="json"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                        </div>
-
-                        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                            <Link to="/chat" className="btn btn-secondary">Try it live</Link>
+                    {/* Tabs - Segmented Control */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+                        <div style={{
+                            background: '#e2e8f0',
+                            padding: '4px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            gap: '4px',
+                            flexWrap: 'wrap',
+                            justifyContent: 'center'
+                        }}>
+                            <TabButton label="Claude Code" isActive={activeTab === 'claude'} onClick={() => setActiveTab('claude')} />
+                            <TabButton label="Codex" isActive={activeTab === 'codex'} onClick={() => setActiveTab('codex')} />
+                            <TabButton label="Cursor" isActive={activeTab === 'cursor'} onClick={() => setActiveTab('cursor')} />
+                            <TabButton label="Antigravity" isActive={activeTab === 'antigravity'} onClick={() => setActiveTab('antigravity')} />
                         </div>
                     </div>
 
+                    {/* Tab Content */}
+                    <div className="card" style={{ minHeight: '300px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', textAlign: 'left' }}>
+
+                        {/* CLAUDE CODE */}
+                        {activeTab === 'claude' && (
+                            <div className="animate-fade-in">
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open your configuration file</p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Open your terminal
+                                    </p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Edit <code>~/.claude.json</code> (MacOS/Linux) or <code>%APPDATA%\Claude\claude.json</code> (Windows)
+                                    </p>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Add this snippet inside "mcpServers"</p>
+                                    <CodeSnippet
+                                        code={`"sifter": {
+  "url": "${mcpUrl}",
+  "transport": "sse"
+}`}
+                                        language="json"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CODEX */}
+                        {activeTab === 'codex' && (
+                            <div className="animate-fade-in">
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open your configuration file</p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Open your terminal
+                                    </p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Edit <code>~/.codex/config.toml</code>
+                                    </p>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Append this block</p>
+                                    <CodeSnippet
+                                        code={`[mcpServers.sifter]
+url = "${mcpUrl}"
+transport = "sse"`}
+                                        language="toml"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CURSOR */}
+                        {activeTab === 'cursor' && (
+                            <div className="animate-fade-in">
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <ol style={{ paddingLeft: '1.5rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                        <li>Navigate to <strong>Cursor Settings</strong> (top right gear icon) → <strong>Features</strong> → <strong>MCP Services</strong></li>
+                                        <li>Click <strong>+ Add New MCP Server</strong></li>
+                                        <li>Set Type to <strong>SSE</strong></li>
+                                        <li>Paste the URL below:</li>
+                                    </ol>
+                                    <CopyModule text={mcpUrl} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ANTIGRAVITY */}
+                        {activeTab === 'antigravity' && (
+                            <div className="animate-fade-in">
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open MCP Settings</p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Click the <strong>MCP Store</strong> icon in the sidebar
+                                    </p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Click <strong>Manage Servers</strong> then select <strong>Edit mcp_config.json</strong>
+                                    </p>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Add to your config object</p>
+                                    <CodeSnippet
+                                        code={`"sifter": {
+  "url": "${mcpUrl}",
+  "transport": "sse"
+}`}
+                                        language="json"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </section>
 

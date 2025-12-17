@@ -45,20 +45,7 @@ const Navbar = () => {
                     <img src={logo} alt="Sifter Logo" style={{ height: '40px', width: 'auto' }} />
                     <span>Sifter</span>
                 </Link>
-                <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
-                    <Link to="/chat" style={{
-                        fontWeight: 500,
-                        fontSize: '1rem',
-                        color: 'var(--color-text-secondary)',
-                        transition: 'color 0.2s'
-                    }}
-                        onMouseEnter={(e) => e.target.style.color = 'var(--color-text-primary)'}
-                        onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
-                    >
-                        Try it live
-                    </Link>
 
-                </div>
             </div>
         </nav>
     );
