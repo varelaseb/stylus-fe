@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import CopyModule from '../components/CopyModule';
 import { IconSearch, IconDatabase, IconCheck, IconZap, IconTrendingUp, IconShield, IconBook, IconTool, IconCompass } from '../components/Icons';
@@ -8,8 +8,10 @@ import CodeSnippet from '../components/CodeSnippet';
 import ChatWindow from '../components/ChatWindow';
 
 const Landing = () => {
-    const [activeTab, setActiveTab] = useState('claude'); // 'claude', 'codex', 'cursor', 'antigravity'
+    const [activeTab, setActiveTab] = useState('claude'); // 'claude', 'codexCli', 'cursor', 'antigravity', 'codexIde'
     const mcpUrl = "https://mcp.sifter.dev/v1/stylus";
+    const connectSectionRef = useRef(null);
+    const connectHeadingRef = useRef(null);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -20,6 +22,21 @@ const Landing = () => {
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
+
+    const scrollToConnectSection = () => {
+        const target = connectHeadingRef.current || connectSectionRef.current;
+        if (!target) return;
+
+        const rect = target.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY;
+        const navbarOffset = 90;
+        const centeredY = absoluteTop - (window.innerHeight / 2) + (rect.height / 2) - (navbarOffset / 2);
+
+        window.scrollTo({
+            top: Math.max(0, centeredY),
+            behavior: 'smooth',
+        });
+    };
 
     return (
         <div className="landing-page" style={{ position: 'relative' }}>
@@ -102,10 +119,10 @@ const Landing = () => {
             </section>
 
             {/* Installation Instructions */}
-            <section className="section" style={{ paddingTop: '0' }}>
+            <section id="connect-sifter" ref={connectSectionRef} className="section" style={{ paddingTop: '0' }}>
                 <div className="container" style={{ maxWidth: '800px' }}>
                     <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.01em' }}>Connect to Sifter from your IDE</h2>
+                        <h2 ref={connectHeadingRef} style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.01em' }}>Connect to Sifter from your IDE</h2>
                     </div>
 
                     {/* Tabs - Segmented Control */}
@@ -120,9 +137,16 @@ const Landing = () => {
                             justifyContent: 'center'
                         }}>
                             <TabButton label="Claude Code" isActive={activeTab === 'claude'} onClick={() => setActiveTab('claude')} />
-                            <TabButton label="Codex" isActive={activeTab === 'codex'} onClick={() => setActiveTab('codex')} />
+                            <TabButton label="Codex CLI" isActive={activeTab === 'codexCli'} onClick={() => setActiveTab('codexCli')} />
+                            <div style={{
+                                width: '1px',
+                                alignSelf: 'stretch',
+                                background: 'linear-gradient(180deg, rgba(148, 163, 184, 0), rgba(148, 163, 184, 0.5), rgba(148, 163, 184, 0))',
+                                margin: '2px 8px'
+                            }} />
                             <TabButton label="Cursor" isActive={activeTab === 'cursor'} onClick={() => setActiveTab('cursor')} />
                             <TabButton label="Antigravity" isActive={activeTab === 'antigravity'} onClick={() => setActiveTab('antigravity')} />
+                            <TabButton label="Codex IDE" isActive={activeTab === 'codexIde'} onClick={() => setActiveTab('codexIde')} />
                         </div>
                     </div>
 
@@ -152,8 +176,8 @@ const Landing = () => {
                             </div>
                         )}
 
-                        {/* CODEX */}
-                        {activeTab === 'codex' && (
+                        {/* CODEX CLI */}
+                        {activeTab === 'codexCli' && (
                             <div className="animate-fade-in">
                                 <div style={{ marginBottom: '1rem' }}>
                                     <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open your configuration file</p>
@@ -170,6 +194,23 @@ url = "${mcpUrl}"
 transport = "sse"`}
                                         language="toml"
                                     />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CODEX IDE */}
+                        {activeTab === 'codexIde' && (
+                            <div className="animate-fade-in">
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>1. Open Codex settings</p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Open Codex and go to <strong>Settings</strong> → <strong>MCP Servers</strong>
+                                    </p>
+                                    <p style={{ marginBottom: '0.75rem', fontWeight: 600 }}>2. Add an SSE MCP server</p>
+                                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                        Name: <code>sifter</code> | Transport: <code>sse</code> | URL:
+                                    </p>
+                                    <CopyModule text={mcpUrl} />
                                 </div>
                             </div>
                         )}
@@ -314,20 +355,20 @@ transport = "sse"`}
                     }}>FAQ</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         <FAQItem
-                            question="Does Sifter write code for me"
-                            answer="No. Sifter doesn’t generate code. It finds patterns, tools, and up-to-date guidance with sources."
-                        />
-                        <FAQItem
-                            question="Will this change my workflow"
+                            question="Will this change my workflow?"
                             answer="No. You keep crafting your code. Sifter lives in your IDE as an MCP server you can query when you need context."
                         />
                         <FAQItem
-                            question="What can I ask it"
+                            question="Does Sifter write code for me?"
+                            answer="No. Sifter doesn’t generate code. It finds patterns, tools, and up-to-date guidance with sources."
+                        />
+                        <FAQItem
+                            question="What can I ask it?"
                             answer="Anything like: “Is this a good fit for Stylus?”, “What’s the most common approach?”, “What tools are people using now?”, “What changed recently that affects my setup?”"
                         />
                     </div>
                     <div style={{ marginTop: '4rem', textAlign: 'center' }}>
-                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="btn btn-primary" style={{ cursor: 'pointer' }}>Add to IDE</button>
+                        <button onClick={scrollToConnectSection} className="btn btn-primary" style={{ cursor: 'pointer' }}>Plug into sifter</button>
                     </div>
                 </div>
             </section>

@@ -1,16 +1,54 @@
-# React + Vite
+# Stylus Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React frontend for Sifter (Stylus ecosystem research assistant).
 
-Currently, two official plugins are available:
+## Local dev
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+Default local URL: `http://localhost:5173`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The app uses `VITE_SEARCH_API_URL` for backend retrieval calls.
+Recommended local default is relative path with Vite proxy:
 
-## Expanding the ESLint configuration
+```env
+VITE_SEARCH_API_URL=/stylus-chat
+VITE_OPENROUTER_PROXY_URL=/openrouter/chat/completions
+VITE_PROXY_TARGET=http://localhost:8001
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Docker
+
+Run directly from this repo:
+
+```bash
+docker network create stylus-dev-net 2>/dev/null || true
+docker compose up -d --build
+```
+
+Stop:
+
+```bash
+docker compose down --remove-orphans
+```
+
+In Docker, frontend is served by Nginx on `http://localhost:5173` and proxies:
+- `GET /health` -> backend `/health`
+- `POST /stylus-chat` -> backend `/stylus-chat`
+- `POST /openrouter/chat/completions` -> backend `/openrouter/chat/completions`
+
+## Security Model
+
+- Frontend does not store provider API keys.
+- LLM calls go through backend proxy (`/openrouter/chat/completions`).
+- Keep OpenRouter credentials only in backend runtime env.
+
+## Build checks
+
+```bash
+npm run lint
+npm run build
+```
