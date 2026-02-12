@@ -4,7 +4,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import 'prismjs/themes/prism-tomorrow.css';
 
-const SEARCH_API_URL = import.meta.env.VITE_SEARCH_API_URL || 'http://localhost:8001/stylus-chat';
+const SEARCH_API_URL = import.meta.env.VITE_SEARCH_API_URL || '/stylus-chat';
+const OPENROUTER_PROXY_URL =
+  import.meta.env.VITE_OPENROUTER_PROXY_URL || '/openrouter/chat/completions';
 const MODEL = import.meta.env.VITE_LLM_MODEL || 'google/gemini-2.0-flash-exp';
 const FALLBACK_MODEL = import.meta.env.VITE_LLM_FALLBACK_MODEL || 'openai/gpt-4o-mini';
 const SYSTEM_PROMPT =
@@ -210,17 +212,16 @@ const ChatWindow = () => {
     }
   };
 
-  const callOpenRouter = async (apiKey, model, payload) =>
-    fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const callOpenRouter = async (model, payload) =>
+    fetch(OPENROUTER_PROXY_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ model, ...payload }),
     });
 
-  const processLlmTurn = async (currentMessages, apiKey, depth = 0) => {
+  const processLlmTurn = async (currentMessages, depth = 0) => {
     if (depth > MAX_TOOL_ROUNDS) {
       setMessages((prev) => [
         ...prev,
@@ -240,7 +241,7 @@ const ChatWindow = () => {
       tool_choice: 'auto',
     };
 
-    let response = await callOpenRouter(apiKey, MODEL, basePayload);
+    let response = await callOpenRouter(MODEL, basePayload);
     if (!response.ok) {
       const body = await response.text();
       const shouldFallback =
@@ -248,7 +249,7 @@ const ChatWindow = () => {
 
       if (shouldFallback) {
         setThinkingStatus('Primary model unavailable, trying fallback...');
-        response = await callOpenRouter(apiKey, FALLBACK_MODEL, basePayload);
+        response = await callOpenRouter(FALLBACK_MODEL, basePayload);
       }
 
       if (!response.ok) {
@@ -288,7 +289,7 @@ const ChatWindow = () => {
         });
       }
 
-      await processLlmTurn(updatedMessages, apiKey, depth + 1);
+      await processLlmTurn(updatedMessages, depth + 1);
       return;
     }
 
@@ -310,16 +311,7 @@ const ChatWindow = () => {
     setThinkingStatus('Understanding your request...');
 
     try {
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-      if (!apiKey) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: 'Error: VITE_OPENROUTER_API_KEY is not configured.' },
-        ]);
-        return;
-      }
-
-      await processLlmTurn(newMessages, apiKey, 0);
+      await processLlmTurn(newMessages, 0);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${message}` }]);
