@@ -4,6 +4,7 @@ import Landing from './pages/Landing';
 import Chat from './pages/Chat';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import './App.css';
 
 function App() {
   return (
