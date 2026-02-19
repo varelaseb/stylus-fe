@@ -9,7 +9,7 @@ import ChatWindow from '../components/ChatWindow';
 
 const Landing = () => {
     const [activeTab, setActiveTab] = useState('claude'); // 'claude', 'codexCli', 'cursor', 'antigravity', 'codexIde'
-    const mcpUrl = "https://mcp.sifter.dev/v1/stylus";
+    const mcpUrl = import.meta.env.VITE_MCP_SERVER_URL || "https://mcp.sifter.dev/v1/stylus";
     const connectSectionRef = useRef(null);
     const connectHeadingRef = useRef(null);
 

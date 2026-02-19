@@ -52,3 +52,33 @@ In Docker, frontend is served by Nginx on `http://localhost:5173` and proxies:
 npm run lint
 npm run build
 ```
+
+## Production deploy (GitHub Actions)
+
+This repo includes `.github/workflows/deploy-production.yml`.
+It deploys to the server on every push to `main` (or manual run).
+
+Server path used by the workflow:
+
+- `/opt/stylus-frontend`
+
+Required GitHub repository secrets:
+
+- `DEPLOY_HOST` (example: `50.116.47.95`)
+- `DEPLOY_USER` (example: `root`)
+- `DEPLOY_PORT` (optional, defaults to `22`)
+- `DEPLOY_SSH_KEY` (private key for server SSH login)
+- `VITE_MCP_SERVER_URL`
+- `VITE_SEARCH_API_URL`
+- `VITE_OPENROUTER_PROXY_URL`
+- `VITE_LLM_SYSTEM_PROMPT` (optional)
+- `VITE_LLM_MODEL` (optional)
+- `VITE_LLM_FALLBACK_MODEL` (optional)
+- `VITE_PROJECT_GITHUB_URL` (optional)
+- `VITE_PROJECT_X_URL` (optional)
+
+On deploy, the workflow:
+
+1. Syncs repo files to `/opt/stylus-frontend`.
+2. Writes `/opt/stylus-frontend/.env` from GitHub Secrets.
+3. Runs `docker compose -f compose.server.yml --env-file .env up -d --build`.

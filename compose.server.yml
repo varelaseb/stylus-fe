@@ -1,0 +1,30 @@
+services:
+  stylus-frontend:
+    container_name: stylus-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_MCP_SERVER_URL: ${VITE_MCP_SERVER_URL:-https://mcp.sifter.dev/v1/stylus}
+        VITE_SEARCH_API_URL: ${VITE_SEARCH_API_URL:-https://api.siftstylus.xyz/stylus-chat}
+        VITE_OPENROUTER_PROXY_URL: ${VITE_OPENROUTER_PROXY_URL:-https://api.siftstylus.xyz/openrouter/chat/completions}
+        VITE_LLM_SYSTEM_PROMPT: ${VITE_LLM_SYSTEM_PROMPT:-}
+        VITE_LLM_MODEL: ${VITE_LLM_MODEL:-openai/gpt-4o-mini}
+        VITE_LLM_FALLBACK_MODEL: ${VITE_LLM_FALLBACK_MODEL:-anthropic/claude-3.5-haiku}
+        VITE_PROJECT_GITHUB_URL: ${VITE_PROJECT_GITHUB_URL:-}
+        VITE_PROJECT_X_URL: ${VITE_PROJECT_X_URL:-}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web-ag-ui_default
+      - traefik.http.routers.stylus-frontend.rule=Host(`siftstylus.xyz`) || Host(`www.siftstylus.xyz`)
+      - traefik.http.routers.stylus-frontend.entrypoints=websecure
+      - traefik.http.routers.stylus-frontend.tls=true
+      - traefik.http.routers.stylus-frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.stylus-frontend.loadbalancer.server.port=80
+    networks:
+      - web-ag-ui_default
+    restart: unless-stopped
+
+networks:
+  web-ag-ui_default:
+    external: true
