@@ -1,151 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Prism from 'prismjs';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import 'prismjs/themes/prism-tomorrow.css';
 
-const SEARCH_API_URL = import.meta.env.VITE_SEARCH_API_URL || '/stylus-chat';
-const OPENROUTER_PROXY_URL =
-  import.meta.env.VITE_OPENROUTER_PROXY_URL || '/openrouter/chat/completions';
-const MODEL = import.meta.env.VITE_LLM_MODEL || 'google/gemini-2.0-flash-exp';
-const FALLBACK_MODEL = import.meta.env.VITE_LLM_FALLBACK_MODEL || 'openai/gpt-4o-mini';
-const SYSTEM_PROMPT =
-  import.meta.env.VITE_LLM_SYSTEM_PROMPT ||
-  [
-    'You are Sifter, a research assistant for Arbitrum Stylus developers.',
-    'Use search_stylus_docs for technical Stylus questions before final answers.',
-    'Do not generate contract or application code.',
-    'Answer references-first: links/repositories/docs first, concise guidance second.',
-    'Format references as markdown hyperlinks whenever possible.',
-    'If retrieval is insufficient, say so clearly.',
-  ].join(' ');
-const MAX_TOOL_ROUNDS = 3;
-const SUGGESTED_PROMPTS = [
-  'What are the newest Stylus tools and what do they do?',
-  'I need references for test patterns in Stylus smart contracts.',
-  'How do teams usually deploy and verify Stylus contracts now?',
-  'What community projects are active in the Stylus ecosystem?',
-];
-const INITIAL_ASSISTANT_MESSAGE = {
-  role: 'assistant',
-  content:
-    'Hi, how can I help you? I focus on Stylus ecosystem research and can return source links first.',
-};
-
-const URL_REGEX = /(^|[\s(])((https?:\/\/[^\s)<]+))/g;
-const MARKDOWN_LINK_TOKEN_PREFIX = '__md_link_token_';
-
-const linkifyPlainUrls = (text) => {
-  const source = String(text ?? '');
-  const preserved = [];
-
-  const masked = source.replace(/\[[^\]]+\]\((https?:\/\/[^)\s]+)\)/g, (match) => {
-    const token = `${MARKDOWN_LINK_TOKEN_PREFIX}${preserved.length}__`;
-    preserved.push(match);
-    return token;
-  });
-
-  const linked = masked.replace(URL_REGEX, (_full, prefix, url) => {
-    const cleaned = url.replace(/[),.;!?]+$/, '');
-    const trailing = url.slice(cleaned.length);
-    return `${prefix}[${cleaned}](${cleaned})${trailing}`;
-  });
-
-  return linked.replace(
-    new RegExp(`${MARKDOWN_LINK_TOKEN_PREFIX}(\\d+)__`, 'g'),
-    (_token, index) => preserved[Number(index)] || _token
-  );
-};
-
-const normalizeReferenceFormatting = (text) => {
-  const source = String(text ?? '');
-  const lines = source.split('\n');
-
-  const transformed = lines.map((line) => {
-    // "- Name - https://url - description"
-    let match = line.match(/^(\s*[-*]\s+)([^-\n][^-]*?)\s+-\s+(https?:\/\/\S+)(\s+-\s+.*)?$/);
-    if (match) {
-      const prefix = match[1];
-      const name = match[2].trim();
-      const url = match[3].trim().replace(/[),.;!?]+$/, '');
-      const desc = (match[4] || '').trim();
-      return `${prefix}[${name}](${url})${desc ? ` ${desc}` : ''}`;
-    }
-
-    // "1. Name - https://url - description"
-    match = line.match(/^(\s*\d+\.\s+)([^-\n][^-]*?)\s+-\s+(https?:\/\/\S+)(\s+-\s+.*)?$/);
-    if (match) {
-      const prefix = match[1];
-      const name = match[2].trim();
-      const url = match[3].trim().replace(/[),.;!?]+$/, '');
-      const desc = (match[4] || '').trim();
-      return `${prefix}[${name}](${url})${desc ? ` ${desc}` : ''}`;
-    }
-
-    return line;
-  });
-
-  return transformed.join('\n');
-};
-
-const extractReferencesFromMessages = (messages) => {
-  const collected = [];
-  const seen = new Set();
-
-  for (const msg of [...messages].reverse()) {
-    if (msg?.role !== 'tool') continue;
-    try {
-      const payload = JSON.parse(msg.content || '{}');
-      const refs = Array.isArray(payload?.references) ? payload.references : [];
-      for (const ref of refs) {
-        const title = String(ref?.title || 'Reference').trim();
-        const url = String(ref?.url || '').trim();
-        if (!url.startsWith('http')) continue;
-        if (seen.has(url)) continue;
-        seen.add(url);
-        collected.push({ title, url });
-      }
-    } catch {
-      // Ignore non-JSON tool payloads.
-    }
-  }
-
-  return collected;
-};
-
-const ensureClickableReferences = (text, references) => {
-  const source = String(text ?? '');
-  if (!references.length) return source;
-
-  const hasInlineLink = /\[[^\]]+\]\((https?:\/\/[^)\s]+)\)/i.test(source);
-  const hasPlainUrl = /https?:\/\/\S+/i.test(source);
-  if (hasInlineLink || hasPlainUrl) return source;
-
-  const lines = references.slice(0, 6).map((ref) => `- [${ref.title}](${ref.url})`);
-  return `${source}\n\nReferences:\n${lines.join('\n')}`;
-};
-
-const SEARCH_TOOL = {
-  type: 'function',
-  function: {
-    name: 'search_stylus_docs',
-    description:
-      'Retrieves relevant Arbitrum Stylus ecosystem context. Use this before final answers and return links/references first.',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Natural language query describing the Stylus research question.',
-        },
-      },
-      required: ['query'],
-    },
-  },
-};
+import {
+  DEFAULT_SKILL_ID,
+  SKILL_OPTIONS,
+  buildInitialAssistantMessage,
+  getSkillById,
+  getSuggestedPromptsForSkill,
+} from '../skills/catalog';
+import { getKnowledgeBaseHealth } from '../services/backendClient';
+import { runSkillConversation } from '../services/chatRuntime';
+import { linkifyPlainUrls, normalizeReferenceFormatting } from '../utils/messageFormatting';
 
 const ChatWindow = () => {
-  const [messages, setMessages] = useState([INITIAL_ASSISTANT_MESSAGE]);
+  const [messages, setMessages] = useState([buildInitialAssistantMessage(DEFAULT_SKILL_ID)]);
+  const [activeSkillId, setActiveSkillId] = useState(DEFAULT_SKILL_ID);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -154,6 +26,13 @@ const ChatWindow = () => {
 
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  const suggestedPrompts = useMemo(
+    () => getSuggestedPromptsForSkill(activeSkillId),
+    [activeSkillId]
+  );
+
+  const activeSkillLabel = getSkillById(activeSkillId).shortLabel;
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
@@ -168,153 +47,74 @@ const ChatWindow = () => {
         behavior: 'smooth',
       });
     }
+
     Prism.highlightAll();
   }, [messages]);
 
   useEffect(() => {
     let mounted = true;
-    const healthUrl = SEARCH_API_URL.replace(/\/stylus-chat$/, '/health');
 
     const checkHealth = async () => {
       try {
-        const res = await fetch(healthUrl, { method: 'GET' });
-        if (mounted) setKbReady(res.ok);
+        const response = await getKnowledgeBaseHealth();
+        if (mounted) {
+          setKbReady(response.ok);
+        }
       } catch {
-        if (mounted) setKbReady(false);
+        if (mounted) {
+          setKbReady(false);
+        }
       }
     };
 
     checkHealth();
     const timer = setInterval(checkHealth, 10000);
+
     return () => {
       mounted = false;
       clearInterval(timer);
     };
   }, []);
 
-  const runLocalSearchTool = async (query) => {
-    try {
-      setThinkingStatus('Searching Stylus knowledge base...');
-      const response = await fetch(SEARCH_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: query }),
-      });
-
-      if (!response.ok) {
-        return `Search API error (${response.status})`;
+  useEffect(() => {
+    setMessages((currentMessages) => {
+      if (currentMessages.length !== 1) {
+        return currentMessages;
       }
-
-      const payload = await response.json();
-      return JSON.stringify(payload);
-    } catch (error) {
-      return `Search API error: ${error.message}`;
-    }
-  };
-
-  const callOpenRouter = async (model, payload) =>
-    fetch(OPENROUTER_PROXY_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ model, ...payload }),
+      return [buildInitialAssistantMessage(activeSkillId)];
     });
-
-  const processLlmTurn = async (currentMessages, depth = 0) => {
-    if (depth > MAX_TOOL_ROUNDS) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content:
-            'I hit a tool-call loop while gathering sources. Please rephrase your request and I will retry with a narrower scope.',
-        },
-      ]);
-      return;
-    }
-
-    setThinkingStatus(depth > 0 ? 'Drafting final response...' : 'Querying model...');
-    const basePayload = {
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...currentMessages],
-      tools: [SEARCH_TOOL],
-      tool_choice: 'auto',
-    };
-
-    let response = await callOpenRouter(MODEL, basePayload);
-    if (!response.ok) {
-      const body = await response.text();
-      const shouldFallback =
-        response.status === 404 && MODEL !== FALLBACK_MODEL && body.includes('No endpoints found');
-
-      if (shouldFallback) {
-        setThinkingStatus('Primary model unavailable, trying fallback...');
-        response = await callOpenRouter(FALLBACK_MODEL, basePayload);
-      }
-
-      if (!response.ok) {
-        const retryBody = shouldFallback ? await response.text() : body;
-        throw new Error(`LLM request failed (${response.status}): ${retryBody.slice(0, 200)}`);
-      }
-    }
-
-    const data = await response.json();
-    const message = data?.choices?.[0]?.message;
-    if (!message) {
-      throw new Error('LLM returned no message.');
-    }
-
-    const updatedMessages = [...currentMessages, message];
-
-    if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
-      setThinkingStatus('Using tools to gather references...');
-
-      for (const toolCall of message.tool_calls) {
-        let result = `Error: unsupported tool '${toolCall?.function?.name || 'unknown'}'`;
-
-        try {
-          const args = JSON.parse(toolCall?.function?.arguments || '{}');
-          if (toolCall?.function?.name === 'search_stylus_docs') {
-            const query = args.query || '';
-            result = await runLocalSearchTool(query);
-          }
-        } catch (error) {
-          result = `Error executing tool: ${error.message}`;
-        }
-
-        updatedMessages.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: result,
-        });
-      }
-
-      await processLlmTurn(updatedMessages, depth + 1);
-      return;
-    }
-
-    const extractedRefs = extractReferencesFromMessages(updatedMessages);
-    const safeContent = ensureClickableReferences(message.content, extractedRefs);
-    setMessages((prev) => [...prev, { role: 'assistant', content: safeContent }]);
-  };
+  }, [activeSkillId]);
 
   const submitPrompt = async (promptText) => {
     const normalized = String(promptText || '').trim();
     if (!normalized || loading) return;
 
-    const userMessage = { role: 'user', content: normalized };
-    const newMessages = [...messages, userMessage];
+    const resolvedSkillId = activeSkillId;
+    const userMessage = { role: 'user', content: normalized, skillId: resolvedSkillId };
+    const nextMessages = [...messages, userMessage];
 
-    setMessages(newMessages);
+    setMessages(nextMessages);
     setInput('');
     setLoading(true);
-    setThinkingStatus('Understanding your request...');
+    setThinkingStatus(`Running ${getSkillById(resolvedSkillId).label}...`);
 
     try {
-      await processLlmTurn(newMessages, 0);
+      const updatedMessages = await runSkillConversation({
+        messages: nextMessages,
+        skillId: resolvedSkillId,
+        onStatus: setThinkingStatus,
+      });
+      setMessages(updatedMessages);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${message}` }]);
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          role: 'assistant',
+          skillId: resolvedSkillId,
+          content: `Error: ${message}`,
+        },
+      ]);
     } finally {
       setLoading(false);
       setThinkingStatus('');
@@ -330,6 +130,11 @@ const ChatWindow = () => {
       event.preventDefault();
       submitPrompt(input);
     }
+  };
+
+  const renderAssistantLabel = (skillId) => {
+    const skill = getSkillById(skillId);
+    return `Sifter • ${skill.shortLabel}`;
   };
 
   return (
@@ -359,6 +164,7 @@ const ChatWindow = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           background: '#ffffff',
+          gap: '1rem',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -378,21 +184,46 @@ const ChatWindow = () => {
             </span>
           )}
         </div>
-        <button
-          onClick={() => setMessages([INITIAL_ASSISTANT_MESSAGE])}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            padding: '0.25rem 0.75rem',
-            color: 'var(--color-text-secondary)',
-            cursor: 'pointer',
-            fontSize: '0.8rem',
-            transition: 'all 0.2s',
-          }}
-        >
-          Reset
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>Skill</span>
+          <select
+            value={activeSkillId}
+            onChange={(event) => setActiveSkillId(event.target.value)}
+            disabled={loading}
+            style={{
+              border: '1px solid var(--color-border)',
+              borderRadius: '8px',
+              padding: '0.28rem 0.5rem',
+              fontSize: '0.78rem',
+              color: 'var(--color-text-primary)',
+              background: '#fff',
+            }}
+            title="Choose which skill to run"
+          >
+            {SKILL_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setMessages([buildInitialAssistantMessage(activeSkillId)])}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              borderRadius: '6px',
+              padding: '0.25rem 0.75rem',
+              color: 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'all 0.2s',
+            }}
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
       <div
@@ -409,9 +240,10 @@ const ChatWindow = () => {
       >
         {messages.map((msg, index) => {
           if (msg.role === 'tool' || msg.tool_calls) return null;
+
           return (
             <div
-              key={index}
+              key={`${msg.role}-${index}`}
               style={{
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%',
@@ -427,9 +259,10 @@ const ChatWindow = () => {
                     marginLeft: '0.5rem',
                   }}
                 >
-                  Sifter
+                  {renderAssistantLabel(msg.skillId)}
                 </div>
               )}
+
               <div
                 style={{
                   padding: msg.role === 'assistant' ? '0.8rem 1rem 0.8rem 1.3rem' : '0.75rem 1rem',
@@ -450,7 +283,9 @@ const ChatWindow = () => {
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                        a: ({ ...props }) => (
+                          <a {...props} target="_blank" rel="noopener noreferrer" />
+                        ),
                         code: ({ inline, className, children, ...props }) => {
                           if (inline) {
                             return (
@@ -459,6 +294,7 @@ const ChatWindow = () => {
                               </code>
                             );
                           }
+
                           return (
                             <pre className="md-code-block">
                               <code className={className || ''} {...props}>
@@ -510,10 +346,11 @@ const ChatWindow = () => {
               marginTop: '0.5rem',
             }}
           >
-            {SUGGESTED_PROMPTS.map((prompt) => (
+            {suggestedPrompts.map((prompt) => (
               <button
                 key={prompt}
                 onClick={() => submitPrompt(prompt)}
+                title={`Runs ${activeSkillLabel}`}
                 style={{
                   background: 'var(--color-surface)',
                   border: '1px solid var(--color-border)',
@@ -530,6 +367,7 @@ const ChatWindow = () => {
             ))}
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -555,7 +393,11 @@ const ChatWindow = () => {
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={kbReady ? 'Ask about Arbitrum Stylus...' : 'Connecting to knowledge base...'}
+            placeholder={
+              kbReady
+                ? `Ask about Arbitrum Stylus (${activeSkillLabel})...`
+                : 'Connecting to knowledge base...'
+            }
             disabled={loading}
             style={{
               flex: 1,

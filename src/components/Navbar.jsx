@@ -45,7 +45,7 @@ const Navbar = () => {
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '70px', padding: '0 2rem' }}>
                 <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
-                    <img src={logo} alt="Sifter Logo" style={{ height: '40px', width: 'auto' }} />
+                    <img src={logo} alt="Sifter Logo" style={{ height: '48px', width: 'auto' }} />
                     <span>Sifter</span>
                 </Link>
 
