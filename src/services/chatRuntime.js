@@ -50,6 +50,9 @@ const buildSearchTool = (skillId) =>
 
 const PORTING_STANCE_REGEX = /\b(port now|pilot first|defer)\b/i;
 const PORTING_IMPACT_REGEX = /\b(high_stylus_benefit|low_stylus_impact)\b/i;
+const PORTING_BALLPARK_REGEX =
+  /\b(ballpark|assumption|assumed usage|gas savings|execution speed|throughput|executions per day|100000)\b/i;
+const NUMERIC_SIGNAL_REGEX = /[-+]?\d+(?:\.\d+)?(?:%|x|\s*gas|\s*\/\s*day|\s*per day)?/i;
 
 const looksLikeReferenceListOnly = (content) => {
   const text = String(content || '').trim();
@@ -74,9 +77,11 @@ const shouldRewriteAuditorAnswer = (skillId, content) => {
   const text = String(content || '');
   const hasStance = PORTING_STANCE_REGEX.test(text);
   const hasImpactClass = PORTING_IMPACT_REGEX.test(text);
+  const hasBallparkSection = PORTING_BALLPARK_REGEX.test(text);
+  const hasNumericEstimate = NUMERIC_SIGNAL_REGEX.test(text);
   const referenceOnly = looksLikeReferenceListOnly(text);
 
-  return !hasStance || !hasImpactClass || referenceOnly;
+  return !hasStance || !hasImpactClass || !hasBallparkSection || !hasNumericEstimate || referenceOnly;
 };
 
 const rewriteAuditorAnswer = async ({ workingMessages, skill, onStatus }) => {
@@ -88,6 +93,12 @@ const rewriteAuditorAnswer = async ({ workingMessages, skill, onStatus }) => {
       'Use exactly this structure:',
       'Stance: <port now | pilot first | defer>',
       'Impact: <high_stylus_benefit | low_stylus_impact>',
+      'Ballpark Estimate (Assumed Usage):',
+      '- Assumptions: <if user did not provide usage, use 100000 relevant executions per day and say it is arbitrary>',
+      '- Gas impact: <estimated per-call delta in gas units and % range>',
+      '- Aggregate impact: <estimated daily and monthly gas delta at the assumed usage>',
+      '- Speed impact: <estimated execution speedup % or throughput multiplier range>',
+      '- Confidence: <high | medium | low> and brief reason',
       'Drivers:',
       '- <3 to 6 contract-specific reasons>',
       'Risks/Caveats:',
