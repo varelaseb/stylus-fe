@@ -9,14 +9,14 @@ React frontend for Sifter, now skill-first with:
 Install both skills:
 
 ```bash
-npx sift-stylus-skills-installer \
+npx sift-stylus \
   --repo getFairAI/angel-stylus-coding-assistant
 ```
 
 Install one skill only (optional):
 
 ```bash
-npx sift-stylus-skills-installer \
+npx sift-stylus \
   --repo getFairAI/angel-stylus-coding-assistant \
   --skills sift-stylus-porting-auditor
 ```
@@ -51,7 +51,7 @@ MCP target behavior:
 Optional skill installer metadata shown in UI:
 
 ```env
-VITE_SKILLS_INSTALLER_PACKAGE=sift-stylus-skills-installer
+VITE_SKILLS_INSTALLER_PACKAGE=sift-stylus
 VITE_SKILLS_INSTALL_REPO=getFairAI/angel-stylus-coding-assistant
 ```
 

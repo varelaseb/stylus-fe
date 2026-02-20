@@ -6,7 +6,7 @@ const DEFAULTS = Object.freeze({
   openRouterProxyUrl: '/openrouter/chat/completions',
   model: 'google/gemini-2.0-flash-exp',
   fallbackModel: 'openai/gpt-4o-mini',
-  skillsInstallerPackage: 'sift-stylus-skills-installer',
+  skillsInstallerPackage: 'sift-stylus',
   skillsInstallRepo: 'getFairAI/angel-stylus-coding-assistant',
 });
 
