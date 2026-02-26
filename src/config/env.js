@@ -32,6 +32,4 @@ export const appEnv = Object.freeze({
   skillsInstallerPackage:
     import.meta.env.VITE_SKILLS_INSTALLER_PACKAGE || DEFAULTS.skillsInstallerPackage,
   skillsInstallRepo: import.meta.env.VITE_SKILLS_INSTALL_REPO || DEFAULTS.skillsInstallRepo,
-  researchSystemPrompt: import.meta.env.VITE_RESEARCH_SYSTEM_PROMPT || '',
-  portingAuditorSystemPrompt: import.meta.env.VITE_PORTING_AUDITOR_SYSTEM_PROMPT || '',
 });

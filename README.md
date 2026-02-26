@@ -59,6 +59,8 @@ VITE_SKILLS_INSTALL_REPO=getFairAI/angel-stylus-coding-assistant
 
 - Chat runs in explicit skill mode (user-selected skill).
 - Both skills can call the backend retrieval tool (`search_stylus_docs`) through local API endpoints.
+- Frontend keeps only generic prompt text in source.
+- Runtime requires skill-specific prompt behavior from backend `GET /skills` metadata (`system_prompt`) so behavior matches published skills.
 - Frontend components do not depend on MCP transport details.
 
 ## Docker
@@ -106,9 +108,6 @@ Required GitHub repository secrets:
 - `VITE_MCP_REMOTE_BASE_URL`
 - `VITE_SKILLS_API_BASE_URL`
 - `VITE_OPENROUTER_PROXY_URL`
-- `VITE_LLM_SYSTEM_PROMPT` (optional)
-- `VITE_RESEARCH_SYSTEM_PROMPT` (optional)
-- `VITE_PORTING_AUDITOR_SYSTEM_PROMPT` (optional)
 - `VITE_LLM_MODEL` (optional)
 - `VITE_LLM_FALLBACK_MODEL` (optional)
 - `VITE_SKILLS_INSTALLER_PACKAGE` (optional)

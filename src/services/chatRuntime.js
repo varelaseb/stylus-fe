@@ -1,5 +1,5 @@
 import { SKILL_IDS, getSkillById } from '../skills/catalog';
-import { runSkillSearch } from './backendClient';
+import { getSkillSystemPrompt, runSkillSearch } from './backendClient';
 import { requestAssistantMessage } from './openRouterClient';
 
 export const MAX_TOOL_ROUNDS = 3;
@@ -7,12 +7,12 @@ export const MAX_TOOL_ROUNDS = 3;
 const LOOP_GUARD_MESSAGE =
   'I hit a tool-call loop while gathering sources. Please rephrase your request and I will retry with a narrower scope.';
 
-const RESEARCH_SEARCH_TOOL = {
+const SEARCH_TOOL = {
   type: 'function',
   function: {
     name: 'search_stylus_docs',
     description:
-      'Retrieves relevant Arbitrum Stylus ecosystem context. Use this before final answers and return links/references first.',
+      'Retrieves relevant Arbitrum Stylus ecosystem context. Use this before final answers when evidence is needed.',
     parameters: {
       type: 'object',
       properties: {
@@ -24,98 +24,6 @@ const RESEARCH_SEARCH_TOOL = {
       required: ['query'],
     },
   },
-};
-
-const PORTING_AUDITOR_SEARCH_TOOL = {
-  type: 'function',
-  function: {
-    name: 'search_stylus_docs',
-    description:
-      'Retrieves evidence for Stylus porting judgments (benchmarks, implementation patterns, caveats, and real-world anecdotes). Use this to support a direct contract verdict. Do not return references-only answers.',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Natural language query describing the Stylus research question.',
-        },
-      },
-      required: ['query'],
-    },
-  },
-};
-
-const buildSearchTool = (skillId) =>
-  skillId === SKILL_IDS.PORTING_AUDITOR ? PORTING_AUDITOR_SEARCH_TOOL : RESEARCH_SEARCH_TOOL;
-
-const PORTING_STANCE_REGEX = /\b(port now|pilot first|defer)\b/i;
-const PORTING_IMPACT_REGEX = /\b(high_stylus_benefit|low_stylus_impact)\b/i;
-const PORTING_BALLPARK_REGEX =
-  /\b(ballpark|assumption|assumed usage|gas savings|execution speed|throughput|executions per day|100000)\b/i;
-const NUMERIC_SIGNAL_REGEX = /[-+]?\d+(?:\.\d+)?(?:%|x|\s*gas|\s*\/\s*day|\s*per day)?/i;
-
-const looksLikeReferenceListOnly = (content) => {
-  const text = String(content || '').trim();
-  if (!text) return true;
-
-  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-  if (!lines.length) return true;
-
-  const bulletLines = lines.filter((line) => /^[-*]\s+/.test(line));
-  const linkedBulletLines = bulletLines.filter((line) => /\]\(https?:\/\/|https?:\/\//i.test(line));
-  const reasoningSignal =
-    /\b(because|therefore|due to|hot path|compute|throughput|state|storage|crypt|proof|risk|bottleneck|latency)\b/i.test(
-      text
-    );
-
-  return linkedBulletLines.length >= 3 && !reasoningSignal;
-};
-
-const shouldRewriteAuditorAnswer = (skillId, content) => {
-  if (skillId !== SKILL_IDS.PORTING_AUDITOR) return false;
-
-  const text = String(content || '');
-  const hasStance = PORTING_STANCE_REGEX.test(text);
-  const hasImpactClass = PORTING_IMPACT_REGEX.test(text);
-  const hasBallparkSection = PORTING_BALLPARK_REGEX.test(text);
-  const hasNumericEstimate = NUMERIC_SIGNAL_REGEX.test(text);
-  const referenceOnly = looksLikeReferenceListOnly(text);
-
-  return !hasStance || !hasImpactClass || !hasBallparkSection || !hasNumericEstimate || referenceOnly;
-};
-
-const rewriteAuditorAnswer = async ({ workingMessages, skill, onStatus }) => {
-  const rewriteInstruction = {
-    role: 'user',
-    content: [
-      'Rewrite your previous answer as a direct contract analysis verdict.',
-      'Do not return a references-only response.',
-      'Use exactly this structure:',
-      'Stance: <port now | pilot first | defer>',
-      'Impact: <high_stylus_benefit | low_stylus_impact>',
-      'Ballpark Estimate (Assumed Usage):',
-      '- Assumptions: <if user did not provide usage, use 100000 relevant executions per day and say it is arbitrary>',
-      '- Gas impact: <estimated per-call delta in gas units and % range>',
-      '- Aggregate impact: <estimated daily and monthly gas delta at the assumed usage>',
-      '- Speed impact: <estimated execution speedup % or throughput multiplier range>',
-      '- Confidence: <high | medium | low> and brief reason',
-      'Drivers:',
-      '- <3 to 6 contract-specific reasons>',
-      'Risks/Caveats:',
-      '- <2 to 4 caveats>',
-      'Evidence:',
-      '- <linked sources>',
-    ].join('\n'),
-  };
-
-  onStatus?.('Finalizing contract verdict...');
-
-  return requestAssistantMessage({
-    messages: [...workingMessages.map(toLlmMessage), rewriteInstruction],
-    tools: [],
-    systemPrompt: skill.systemPrompt,
-    onStatus,
-  });
 };
 
 const toLlmMessage = (message) => {
@@ -169,18 +77,39 @@ const ensureClickableReferences = (text, references) => {
   const source = String(text || '');
   if (!references.length) return source;
 
-  const hasInlineLink = /\[[^\]]+\]\((https?:\/\/[^)\s]+)\)/i.test(source);
-  const hasPlainUrl = /https?:\/\/\S+/i.test(source);
+  const existingUrls = new Set();
+  const markdownLinkRegex = /\[[^\]]+\]\((https?:\/\/[^)\s]+)\)/gi;
+  const plainUrlRegex = /https?:\/\/[^\s)\]]+/gi;
 
-  if (hasInlineLink || hasPlainUrl) {
-    return source;
+  for (const match of source.matchAll(markdownLinkRegex)) {
+    existingUrls.add(match[1]);
+  }
+  for (const match of source.matchAll(plainUrlRegex)) {
+    existingUrls.add(match[0]);
   }
 
-  const lines = references.slice(0, 6).map((ref) => `- [${ref.title}](${ref.url})`);
-  return `${source}\n\nReferences:\n${lines.join('\n')}`;
+  const lines = [];
+  const minTotalLinks = 4;
+  for (const ref of references) {
+    const title = String(ref?.title || 'Reference').trim();
+    const url = String(ref?.url || '').trim();
+    if (!url.startsWith('http')) continue;
+    if (existingUrls.has(url)) continue;
+
+    lines.push(`- [${title}](${url})`);
+    existingUrls.add(url);
+
+    if (lines.length >= 6) break;
+    if (existingUrls.size >= minTotalLinks && lines.length >= 1) break;
+  }
+
+  if (!lines.length) return source;
+
+  const heading = source && existingUrls.size > lines.length ? 'Additional References:' : 'References:';
+  return `${source}\n\n${heading}\n${lines.join('\n')}`;
 };
 
-const executeSearchToolCall = async (toolCall, skillId, onStatus) => {
+const executeSearchToolCall = async (toolCall, skillId, onStatus, seedPrompt = '') => {
   const toolName = toolCall?.function?.name || 'unknown';
   if (toolName !== 'search_stylus_docs') {
     return `Error: unsupported tool '${toolName}'`;
@@ -189,9 +118,14 @@ const executeSearchToolCall = async (toolCall, skillId, onStatus) => {
   try {
     const args = JSON.parse(toolCall?.function?.arguments || '{}');
     const query = String(args.query || '').trim();
+    const seed = String(seedPrompt || '').trim();
+    const effectiveQuery =
+      skillId === SKILL_IDS.PORTING_AUDITOR && seed
+        ? `${query}\n\nPrimary target context: ${seed}`
+        : query;
 
     onStatus?.('Searching Stylus knowledge base...');
-    const payload = await runSkillSearch({ skillId, query });
+    const payload = await runSkillSearch({ skillId, query: effectiveQuery });
     return JSON.stringify(payload);
   } catch (error) {
     return `Search API error: ${error.message}`;
@@ -200,6 +134,13 @@ const executeSearchToolCall = async (toolCall, skillId, onStatus) => {
 
 export const runSkillConversation = async ({ messages, skillId, onStatus }) => {
   const skill = getSkillById(skillId);
+  const effectiveSystemPrompt = await getSkillSystemPrompt(skillId);
+  if (!effectiveSystemPrompt) {
+    throw new Error(`Published system prompt is missing for skill '${skillId}'.`);
+  }
+  const latestUserPrompt =
+    [...messages].reverse().find((message) => message?.role === 'user')?.content || '';
+
   const workingMessages = [...messages];
 
   for (let depth = 0; depth <= MAX_TOOL_ROUNDS; depth += 1) {
@@ -209,8 +150,8 @@ export const runSkillConversation = async ({ messages, skillId, onStatus }) => {
 
     const assistantMessage = await requestAssistantMessage({
       messages: workingMessages.map(toLlmMessage),
-      tools: [buildSearchTool(skillId)],
-      systemPrompt: skill.systemPrompt,
+      tools: [SEARCH_TOOL],
+      systemPrompt: effectiveSystemPrompt,
       onStatus,
     });
 
@@ -219,25 +160,11 @@ export const runSkillConversation = async ({ messages, skillId, onStatus }) => {
     const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
 
     if (!toolCalls.length) {
-      let finalizedAssistantMessage = assistantMessage;
-
-      if (shouldRewriteAuditorAnswer(skillId, assistantMessage.content)) {
-        try {
-          finalizedAssistantMessage = await rewriteAuditorAnswer({
-            workingMessages,
-            skill,
-            onStatus,
-          });
-        } catch {
-          // Keep the original answer if rewrite fails.
-        }
-      }
-
       const extractedRefs = extractReferencesFromMessages(workingMessages);
-      const safeContent = ensureClickableReferences(finalizedAssistantMessage.content, extractedRefs);
+      const safeContent = ensureClickableReferences(assistantMessage.content, extractedRefs);
 
       workingMessages[workingMessages.length - 1] = {
-        ...finalizedAssistantMessage,
+        ...assistantMessage,
         role: 'assistant',
         content: safeContent,
         skillId,
@@ -249,7 +176,7 @@ export const runSkillConversation = async ({ messages, skillId, onStatus }) => {
     onStatus?.('Using skill tools to gather references...');
 
     for (const toolCall of toolCalls) {
-      const result = await executeSearchToolCall(toolCall, skillId, onStatus);
+      const result = await executeSearchToolCall(toolCall, skillId, onStatus, latestUserPrompt);
       workingMessages.push({
         role: 'tool',
         tool_call_id: toolCall.id,

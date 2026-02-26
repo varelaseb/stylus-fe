@@ -6,6 +6,7 @@ const trimTrailingSlash = (value) => String(value || '').trim().replace(/\/+$/, 
 const stripSkillsSuffix = (value) => value.replace(/\/skills$/, '');
 
 const getSkillsApiBase = () => trimTrailingSlash(appEnv.skillsApiBaseUrl);
+let skillsIndexCache = null;
 
 const buildSkillSearchUrl = (skillId) => {
   const skillPath = getSkillSearchPath(skillId);
@@ -31,6 +32,19 @@ const buildHealthUrl = () => {
   return `${stripSkillsSuffix(base)}/health`;
 };
 
+const buildSkillsIndexUrl = () => {
+  const base = getSkillsApiBase();
+  if (!base) {
+    return '/skills';
+  }
+
+  if (base.endsWith('/skills')) {
+    return base;
+  }
+
+  return `${base}/skills`;
+};
+
 const postJson = async (url, payload) => {
   const response = await fetch(url, {
     method: 'POST',
@@ -50,6 +64,29 @@ const postJson = async (url, payload) => {
 export const getKnowledgeBaseHealth = async () => {
   const healthUrl = buildHealthUrl();
   return fetch(healthUrl, { method: 'GET' });
+};
+
+export const getSkillsIndex = async () => {
+  if (skillsIndexCache) {
+    return skillsIndexCache;
+  }
+
+  const response = await fetch(buildSkillsIndexUrl(), { method: 'GET' });
+  if (!response.ok) {
+    throw new Error(`Skills index error (${response.status})`);
+  }
+
+  const payload = await response.json();
+  const skills = Array.isArray(payload?.skills) ? payload.skills : [];
+  skillsIndexCache = skills;
+  return skillsIndexCache;
+};
+
+export const getSkillSystemPrompt = async (skillId) => {
+  const skills = await getSkillsIndex();
+  const skill = skills.find((item) => item?.id === skillId);
+  const prompt = String(skill?.system_prompt || '').trim();
+  return prompt;
 };
 
 export const runSkillSearch = async ({ skillId, query }) => {

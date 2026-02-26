@@ -1,34 +1,14 @@
-import { appEnv } from '../config/env';
-
 export const SKILL_IDS = Object.freeze({
   RESEARCH: 'sift-stylus-research',
   PORTING_AUDITOR: 'sift-stylus-porting-auditor',
 });
 export const DEFAULT_SKILL_ID = SKILL_IDS.RESEARCH;
 
-const DEFAULT_RESEARCH_SYSTEM_PROMPT = [
-  'You are Sifter, a research assistant for Arbitrum Stylus developers.',
-  'Use search_stylus_docs for technical Stylus questions before final answers.',
-  'Do not generate contract or application code.',
-  'Answer references-first: links/repositories/docs first, concise guidance second.',
-  'Format references as markdown hyperlinks whenever possible.',
-  'If retrieval is insufficient, say so clearly.',
-].join(' ');
-
-const DEFAULT_PORTING_AUDITOR_SYSTEM_PROMPT = [
-  'You are Sifter operating the sift-stylus-porting-auditor skill.',
-  'Your goal is impact judgment, not migration planning.',
-  'In a hybrid Solidity and Rust architecture, decide if porting a contract to Stylus is high benefit or low impact.',
-  'When the user gives a contract or repo target, provide direct analysis for that target; do not return generic resource lists.',
-  'Always give a short high-level prose stance before numeric details: port now, pilot first, or defer.',
-  'Always include an impact classification: high_stylus_benefit or low_stylus_impact.',
-  'Always include a ballpark estimate for gas savings and/or execution speed improvements, with explicit assumptions.',
-  'If the user does not provide usage volume, assume an arbitrary baseline of 100000 relevant executions per day and state that assumption explicitly.',
-  'Never return references-only output. Verdict first, evidence second.',
-  'Use this structure: Stance, Impact, Ballpark Estimate, Drivers, Risks/Caveats, Evidence.',
-  'Prefer independent and anecdotal evidence over official docs, while still respecting feasibility and security constraints.',
-  'Use search_stylus_docs before final conclusions when you need evidence.',
-  'Do not synthesize production contract code unless the user explicitly asks for it.',
+const DEFAULT_GENERIC_SYSTEM_PROMPT = [
+  'You are Sifter.',
+  'Use available tools to gather evidence before final answers when needed.',
+  'Return concise, useful answers with references when available.',
+  'If evidence is weak or incomplete, state uncertainty clearly.',
 ].join(' ');
 
 const RESEARCH_SKILL = Object.freeze({
@@ -37,7 +17,7 @@ const RESEARCH_SKILL = Object.freeze({
   shortLabel: 'Research',
   searchPath: `/skills/${SKILL_IDS.RESEARCH}/search`,
   description: 'Evidence-backed answers with links across docs, repos, and community sources.',
-  systemPrompt: appEnv.researchSystemPrompt || DEFAULT_RESEARCH_SYSTEM_PROMPT,
+  systemPrompt: DEFAULT_GENERIC_SYSTEM_PROMPT,
   suggestedPrompts: [
     'What are the newest Stylus tools and what do they do?',
     'I need references for test patterns in Stylus smart contracts.',
@@ -53,10 +33,11 @@ const PORTING_AUDITOR_SKILL = Object.freeze({
   searchPath: `/skills/${SKILL_IDS.PORTING_AUDITOR}/search`,
   description:
     'Assess Solidity contracts for likely Stylus upside in a hybrid Solidity and Rust codebase.',
-  systemPrompt: appEnv.portingAuditorSystemPrompt || DEFAULT_PORTING_AUDITOR_SYSTEM_PROMPT,
+  systemPrompt: DEFAULT_GENERIC_SYSTEM_PROMPT,
   suggestedPrompts: [
     'Analyze https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol and return a porting verdict.',
     'Analyze https://github.com/gmx-io/gmx-contracts and identify high_stylus_benefit vs low_stylus_impact targets.',
+    'Analyze ./contracts and identify high_stylus_benefit vs low_stylus_impact targets.',
     'Given this contract URL, return: stance (port now/pilot first/defer), impact class, drivers, and caveats.',
     'Is this contract a strong Stylus candidate in a hybrid Solidity + Rust architecture? Give a direct verdict.',
   ],
