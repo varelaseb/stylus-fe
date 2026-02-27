@@ -1,6 +1,7 @@
 export const SKILL_IDS = Object.freeze({
   RESEARCH: 'sift-stylus-research',
   PORTING_AUDITOR: 'sift-stylus-porting-auditor',
+  CODE_HELPER: 'sift-stylus-code-helper'
 });
 export const DEFAULT_SKILL_ID = SKILL_IDS.RESEARCH;
 
@@ -43,9 +44,25 @@ const PORTING_AUDITOR_SKILL = Object.freeze({
   ],
 });
 
+const CODE_HELPER_SKILL = Object.freeze({
+  id: SKILL_IDS.CODE_HELPER,
+  label: 'Stylus Code Helper',
+  shortLabel: 'Code Helper',
+  searchPath: `/skills/${SKILL_IDS.CODE_HELPER}/search`,
+  description: 'Implementation-focused guidance for Stylus projects: debugging, architecture patterns, and practical integration advice (no full codegen).',
+  systemPrompt: DEFAULT_GENERIC_SYSTEM_PROMPT,
+  suggestedPrompts: [
+    'How should I structure a Stylus project with multiple Rust crates and ABI boundaries?',
+    'What is the recommended pattern for handling storage in Stylus?',
+    'How do I debug a failing Stylus contract call locally?',
+    'What are common performance pitfalls when porting Solidity logic to Stylus?',
+  ],
+});
+
 export const SKILL_CATALOG = Object.freeze({
   [SKILL_IDS.RESEARCH]: RESEARCH_SKILL,
   [SKILL_IDS.PORTING_AUDITOR]: PORTING_AUDITOR_SKILL,
+  [SKILL_IDS.CODE_HELPER]: CODE_HELPER_SKILL,
 });
 
 export const SKILL_OPTIONS = Object.freeze([
@@ -58,6 +75,11 @@ export const SKILL_OPTIONS = Object.freeze([
     id: SKILL_IDS.PORTING_AUDITOR,
     label: PORTING_AUDITOR_SKILL.label,
     description: PORTING_AUDITOR_SKILL.description,
+  },
+  {
+    id: SKILL_IDS.CODE_HELPER,
+    label: CODE_HELPER_SKILL.label,
+    description: CODE_HELPER_SKILL.description,
   },
 ]);
 
