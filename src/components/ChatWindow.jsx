@@ -11,9 +11,10 @@ import {
   getSkillById,
   getSuggestedPromptsForSkill,
 } from '../skills/catalog';
-import { getKnowledgeBaseHealth } from '../services/backendClient';
+import { getKnowledgeBaseHealth, postFeedback } from '../services/backendClient';
 import { runSkillConversation } from '../services/chatRuntime';
 import { linkifyPlainUrls, normalizeReferenceFormatting } from '../utils/messageFormatting';
+import { ContentCopyRounded, ThumbDownRounded, ThumbUpRounded } from '@mui/icons-material';
 
 const ChatWindow = () => {
   const [messages, setMessages] = useState([buildInitialAssistantMessage(DEFAULT_SKILL_ID)]);
@@ -23,6 +24,7 @@ const ChatWindow = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [kbReady, setKbReady] = useState(false);
   const [thinkingStatus, setThinkingStatus] = useState('');
+  const [feedback, setFeedback] = useState({});
 
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -135,6 +137,50 @@ const ChatWindow = () => {
   const renderAssistantLabel = (skillId) => {
     const skill = getSkillById(skillId);
     return `Sifter • ${skill.shortLabel}`;
+  };
+
+  const handleCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error('Copy failed', err);
+    }
+  };
+
+  const handleFeedback = async (index, rating) => {
+    try {
+      if (!messages[index]) {
+        // error out
+      }
+      // feedback is only submitted for system answers, the prompt is always the message before, but we check if it's the user role anyway
+      // filter only user and assistant messages before fetching previous user message
+      const onlyUserAndSystem = messages.filter(el => el.role === 'user' || el.role === 'assistant' && el.content !== '');
+      const assistantMsgIndex = onlyUserAndSystem.findIndex(el => el.content === messages[index].content);
+      console.log(onlyUserAndSystem);
+      console.log(assistantMsgIndex);
+      const prompt = onlyUserAndSystem[assistantMsgIndex - 1].content;
+      if (!prompt) {
+        // error out
+      }
+      const answer = messages[index].role === 'assistant' && messages[index].content;
+      if (!answer) {
+        // error out
+      }
+
+      await postFeedback({ skillId: messages[index].skillId, response: answer, prompt, rating });
+
+      // update feedback object to disable buttons
+      setFeedback((prev) => ({
+        ...prev,
+        [index]: prev[index] === rating ? null : rating,
+      }));
+
+    } catch (error) {
+      console.log(error);
+    } 
+
+    // Optional: send to backend later
+    // await sendMessageFeedback({ messageIndex: index, type })
   };
 
   return (
@@ -307,6 +353,49 @@ const ChatWindow = () => {
                     >
                       {normalizeReferenceFormatting(linkifyPlainUrls(msg.content))}
                     </ReactMarkdown>
+                    {index !== 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', alignItems: 'center' }}>
+                        <button
+                          onClick={() => handleCopy(msg.content)}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            opacity: 0.6,
+                          }}
+                          title="Copy"
+                        >
+                          <ContentCopyRounded />
+                        </button>
+                        <button
+                          disabled={!!feedback[index]}
+                          onClick={() => handleFeedback(index, 1)}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            opacity: 0.6,
+                          }}
+                          title="Like"
+                        >
+                          <ThumbUpRounded />
+                        </button>
+
+                        <button
+                          disabled={!!feedback[index]}
+                          onClick={() => handleFeedback(index, -1)}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            opacity: 0.6,
+                          }}
+                          title="Dislike"
+                        >
+                          <ThumbDownRounded />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>

@@ -10,6 +10,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
+        '/feedback': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
         '/skills': {
           target: proxyTarget,
           changeOrigin: true,
