@@ -24,6 +24,33 @@ const maskToken = (token) => {
   return `••••${token.slice(-4)}`;
 };
 
+const PREVIEW_LIMIT = 120;
+const RATING_BADGES = {
+  '1': { label: 'positive', background: '#dcfce7', color: '#166534' },
+  '0': { label: 'neutral', background: '#fef9c3', color: '#92400e' },
+  '-1': { label: 'negative', background: '#fee2e2', color: '#991b1b' },
+};
+const UNRATED_BADGE = { label: 'unrated', background: '#e2e8f0', color: '#0f172a' };
+
+const toSafeText = (value, fallback) => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value == null) {
+    return fallback;
+  }
+  return String(value);
+};
+
+const getRatingBadgeMeta = (rating) => {
+  const numeric = Number(rating);
+  const key = Number.isFinite(numeric) ? String(Math.trunc(numeric)) : '';
+  return RATING_BADGES[key] ?? UNRATED_BADGE;
+};
+
+const formatPreviewSnippet = (text) =>
+  text.length > PREVIEW_LIMIT ? `${text.slice(0, PREVIEW_LIMIT)}…` : text;
+
 const AdminLogs = () => {
   const [source, setSource] = useState('ingestion');
   const [offsetInput, setOffsetInput] = useState('0');
@@ -47,6 +74,7 @@ const AdminLogs = () => {
   const [exportResults, setExportResults] = useState([]);
   const [exportError, setExportError] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedTurns, setExpandedTurns] = useState({});
 
   const streamControllerRef = useRef(null);
 
@@ -113,6 +141,10 @@ const AdminLogs = () => {
     }, 3600);
     return () => clearTimeout(timer);
   }, [authMessage, authError]);
+
+  useEffect(() => {
+    setExpandedTurns({});
+  }, [exportResults]);
 
   const handleAuthenticate = async () => {
     if (!passwordInput.trim()) {
@@ -249,6 +281,13 @@ const AdminLogs = () => {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const toggleTurnExpansion = (turnKey) => {
+    setExpandedTurns((prev) => ({
+      ...prev,
+      [turnKey]: !prev[turnKey],
+    }));
   };
 
   const fullScreenTitle = fullScreenMode === 'slice' ? 'Paginated slice' : 'Stream tail';
@@ -720,35 +759,163 @@ const AdminLogs = () => {
               <p>No exported turns yet. Run the export to see results.</p>
             )}
             {exportResults.length > 0 && (
-              <ul style={{ listStyle: 'decimal inside', padding: 0, margin: 0 }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: '500px' }}>
                 {exportResults.map((turn, index) => {
-                  const promptPreview = turn.prompt?.slice(0, 120) ?? 'prompt unavailable';
-                  const responsePreview = turn.response?.slice(0, 120) ?? 'response unavailable';
-                  const details = [];
-                  if (turn.rating != null) {
-                    details.push(`rating: ${turn.rating}`);
-                  }
+                  const baseId = turn.turn_id ?? index;
+                  const turnKey = `${baseId}-${turn.rating ?? 'x'}`;
+                  const promptText = toSafeText(turn.prompt, 'prompt unavailable');
+                  const responseText = toSafeText(turn.response, 'response unavailable');
+                  const promptPreview = formatPreviewSnippet(promptText);
+                  const responsePreview = formatPreviewSnippet(responseText);
+                  const ratingMeta = getRatingBadgeMeta(turn.rating);
+                  const detailPieces = [];
                   if (turn.skill) {
-                    details.push(`skill: ${turn.skill}`);
+                    detailPieces.push(`skill: ${turn.skill}`);
                   }
                   if (turn.timestamp) {
-                    details.push(`ts: ${new Date(turn.timestamp * 1000).toLocaleString()}`);
+                    detailPieces.push(
+                      `ts: ${new Date(turn.timestamp * 1000).toLocaleString()}`
+                    );
                   }
+                  const shouldShowViewMore =
+                    promptText.length > PREVIEW_LIMIT || responseText.length > PREVIEW_LIMIT;
+                  const isExpanded = Boolean(expandedTurns[turnKey]);
                   return (
-                    <li key={`${turn.turn_id ?? index}-${turn.rating ?? 'x'}`} style={{ marginBottom: '0.9rem' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '0.3rem' }}>
-                        <strong style={{ fontSize: '0.85rem' }}>Turn</strong>
-                        {details.length > 0 && (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{details.join(' • ')}</span>
+                    <li key={turnKey} style={{ marginBottom: '1rem' }}>
+                      <div
+                        style={{
+                          borderRadius: '12px',
+                          border: '1px solid rgba(15, 23, 42, 0.12)',
+                          background: 'white',
+                          padding: '1rem',
+                          boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            flexWrap: 'wrap',
+                            gap: '0.35rem',
+                          }}
+                        >
+                          <strong style={{ fontSize: '0.9rem' }}>Turn {index + 1}</strong>
+                          <span
+                            style={{
+                              borderRadius: '999px',
+                              padding: '0.35rem 0.9rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              textTransform: 'capitalize',
+                              background: ratingMeta.background,
+                              color: ratingMeta.color,
+                            }}
+                          >
+                            {ratingMeta.label}
+                          </span>
+                        </div>
+                        {detailPieces.length > 0 && (
+                          <p
+                            style={{
+                              margin: '0.35rem 0 0',
+                              fontSize: '0.8rem',
+                              color: 'var(--color-text-secondary)',
+                            }}
+                          >
+                            {detailPieces.join(' • ')}
+                          </p>
                         )}
-                      </div>
-                      <div style={{ marginBottom: '0.35rem' }}>
-                        <strong style={{ fontSize: '0.8rem', color: '#a5b4fc' }}>Prompt:</strong>
-                        <p style={{ margin: 0, fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{promptPreview}</p>
-                      </div>
-                      <div>
-                        <strong style={{ fontSize: '0.8rem', color: '#67e8f9' }}>Response:</strong>
-                        <p style={{ margin: 0, fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{responsePreview}</p>
+                        <div style={{ marginTop: '0.7rem' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'baseline',
+                              gap: '0.5rem',
+                            }}
+                          >
+                            <strong
+                              style={{
+                                fontSize: '0.82rem',
+                                color: '#4c1d95',
+                              }}
+                            >
+                              Prompt
+                            </strong>
+                            <span style={{ fontSize: '0.7rem', color: '#475569' }}>Preview</span>
+                          </div>
+                          <p
+                            style={{
+                              margin: '0.15rem 0 0',
+                              fontSize: '0.8rem',
+                              whiteSpace: 'pre-wrap',
+                              color: '#0f172a',
+                            }}
+                          >
+                            {isExpanded ? promptText : promptPreview}
+                          </p>
+                        </div>
+                        <div style={{ marginTop: '0.55rem' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'baseline',
+                              gap: '0.5rem',
+                            }}
+                          >
+                            <strong
+                              style={{
+                                fontSize: '0.82rem',
+                                color: '#0c4a6e',
+                              }}
+                            >
+                              Response
+                            </strong>
+                            <span style={{ fontSize: '0.7rem', color: '#475569' }}>
+                              {isExpanded ? 'Full' : 'Preview'}
+                            </span>
+                          </div>
+                          <p
+                            style={{
+                              margin: '0.15rem 0 0',
+                              fontSize: '0.8rem',
+                              whiteSpace: 'pre-wrap',
+                              color: '#0f172a',
+                            }}
+                          >
+                            {isExpanded ? responseText : responsePreview}
+                          </p>
+                        </div>
+                        {shouldShowViewMore && (
+                          <div
+                            style={{
+                              marginTop: '0.65rem',
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleTurnExpansion(turnKey)}
+                              aria-expanded={isExpanded}
+                              style={{
+                                border: 'none',
+                                background: 'none',
+                                color: '#1d4ed8',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                padding: 0,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {isExpanded
+                                ? 'Hide full prompt & response'
+                                : 'View full prompt & response'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </li>
                   );
