@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconCopy, IconCheck } from './Icons';
 import Prism from 'prismjs';
+import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-toml';
 import 'prismjs/themes/prism-tomorrow.css'; // Dark theme
@@ -19,15 +20,20 @@ const CodeSnippet = ({ code, language = 'json' }) => {
     };
 
     return (
-        <div style={{
+        <div className="code-snippet" style={{
             position: 'relative',
-            background: '#2d2d2d', // Match prism-tomorrow bg
+            background: 'linear-gradient(145deg, #0b1220 0%, #111827 58%, #1f2937 100%)',
             borderRadius: '12px',
-            border: '1px solid #1e293b',
+            border: '1px solid #334155',
             overflow: 'hidden',
             marginBottom: '1rem',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
         }}>
+            <div style={{
+                height: '3px',
+                background: 'linear-gradient(90deg, #f97316 0%, #38bdf8 50%, #f472b6 100%)'
+            }} />
+
             {/* Header/Controls */}
             <div style={{
                 position: 'absolute',
@@ -38,8 +44,8 @@ const CodeSnippet = ({ code, language = 'json' }) => {
                 <button
                     onClick={handleCopy}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: 'none',
+                        background: 'rgba(56, 189, 248, 0.18)',
+                        border: '1px solid rgba(56, 189, 248, 0.35)',
                         borderRadius: '6px',
                         width: '32px',
                         height: '32px',

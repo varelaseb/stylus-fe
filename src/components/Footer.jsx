@@ -6,9 +6,9 @@ const Footer = () => {
             <div className="container" style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
                 <p>© {new Date().getFullYear()} Sifter for Stylus.</p>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
-                    Built by <a href="https://emberai.xyz" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>EmberAI</a> and <a href="https://getfair.ai/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>FairAI</a>
+                    Built by <a href="https://emberai.xyz" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>EmberAI</a> and <a href="https://getfair.ai/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>FairAI</a> · Built during the Arbitrum Stylus Sprint.
                 </p>
-                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>Not an official Arbitrum product.</p>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>Independent tool. No affiliation with Offchain Labs or the Arbitrum Foundation.</p>
             </div>
         </footer>
     );

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        '/stylus-chat': {
+        '/skills': {
           target: proxyTarget,
           changeOrigin: true,
         },

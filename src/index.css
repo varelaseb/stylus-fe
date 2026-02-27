@@ -58,6 +58,64 @@ pre {
   font-family: var(--font-mono);
 }
 
+/* Brighter shell-style snippet colors for install commands */
+.code-snippet pre,
+.code-snippet code[class*='language-'] {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+  text-shadow: none !important;
+}
+
+.code-snippet .token.comment,
+.code-snippet .token.prolog,
+.code-snippet .token.doctype,
+.code-snippet .token.cdata {
+  color: #64748b !important;
+}
+
+.code-snippet .token.punctuation {
+  color: #94a3b8 !important;
+}
+
+.code-snippet .token.property,
+.code-snippet .token.tag,
+.code-snippet .token.boolean,
+.code-snippet .token.number,
+.code-snippet .token.constant,
+.code-snippet .token.symbol,
+.code-snippet .token.deleted {
+  color: #f59e0b !important;
+}
+
+.code-snippet .token.selector,
+.code-snippet .token.attr-name,
+.code-snippet .token.string,
+.code-snippet .token.char,
+.code-snippet .token.builtin,
+.code-snippet .token.inserted {
+  color: #86efac !important;
+}
+
+.code-snippet .token.operator,
+.code-snippet .token.entity,
+.code-snippet .token.url {
+  color: #fbbf24 !important;
+}
+
+.code-snippet .token.atrule,
+.code-snippet .token.attr-value,
+.code-snippet .token.keyword {
+  color: #f472b6 !important;
+}
+
+.code-snippet .token.function,
+.code-snippet .token.class-name,
+.code-snippet .token.regex,
+.code-snippet .token.important,
+.code-snippet .token.variable {
+  color: #38bdf8 !important;
+}
+
 /* Utilities */
 .container {
   max-width: var(--container-width);
