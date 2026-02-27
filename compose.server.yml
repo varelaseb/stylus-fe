@@ -7,9 +7,9 @@ services:
       args:
         VITE_MCP_TARGET: ${VITE_MCP_TARGET:-remote}
         VITE_MCP_LOCAL_BASE_URL: ${VITE_MCP_LOCAL_BASE_URL:-}
-        VITE_MCP_REMOTE_BASE_URL: ${VITE_MCP_REMOTE_BASE_URL:-https://api.siftstylus.xyz}
-        VITE_SKILLS_API_BASE_URL: ${VITE_SKILLS_API_BASE_URL:-https://api.siftstylus.xyz}
-        VITE_OPENROUTER_PROXY_URL: ${VITE_OPENROUTER_PROXY_URL:-https://api.siftstylus.xyz/openrouter/chat/completions}
+        VITE_MCP_REMOTE_BASE_URL: ${VITE_MCP_REMOTE_BASE_URL:-https://sifter.azule.xyz}
+        VITE_SKILLS_API_BASE_URL: ${VITE_SKILLS_API_BASE_URL:-https://sifter.azule.xyz}
+        VITE_OPENROUTER_PROXY_URL: ${VITE_OPENROUTER_PROXY_URL:-https://sifter.azule.xyz/openrouter/chat/completions}
         VITE_LLM_MODEL: ${VITE_LLM_MODEL:-openai/gpt-4o-mini}
         VITE_LLM_FALLBACK_MODEL: ${VITE_LLM_FALLBACK_MODEL:-anthropic/claude-3.5-haiku}
         VITE_SKILLS_INSTALLER_PACKAGE: ${VITE_SKILLS_INSTALLER_PACKAGE:-sift-stylus}
