@@ -41,9 +41,9 @@ const AdminLogs = () => {
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [fullScreenMode, setFullScreenMode] = useState(null);
-  const [minRating, setMinRating] = useState('1');
+  const [minRating, setMinRating] = useState('');
   const [sinceInput, setSinceInput] = useState('');
-  const [maxSessionsInput, setMaxSessionsInput] = useState('500');
+  const [maxTurnsInput, setMaxTurnsInput] = useState('500');
   const [exportResults, setExportResults] = useState([]);
   const [exportError, setExportError] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -57,9 +57,10 @@ const AdminLogs = () => {
   const safeLimit =
     Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 5000;
   const canQueryLogs = Boolean(adminToken);
-  const parsedMinRating = Math.max(1, Number(minRating) || 1);
-  const parsedMaxSessions =
-    Number(maxSessionsInput) > 0 ? Number(maxSessionsInput) : 500;
+  const parsedMinRatingValue = Number(minRating);
+  const minRatingParam = Number.isFinite(parsedMinRatingValue) ? parsedMinRatingValue : undefined;
+  const parsedMaxTurns =
+    Number(maxTurnsInput) > 0 ? Number(maxTurnsInput) : 500;
   const parseSinceTimestamp = () => {
     if (!sinceInput) {
       return undefined;
@@ -235,13 +236,13 @@ const AdminLogs = () => {
     setExportError('');
     setIsExporting(true);
     try {
-      const sessions = await exportConversations({
-        minRating: parsedMinRating,
+      const turns = await exportConversations({
+        minRating: minRatingParam,
         sinceTimestamp: parseSinceTimestamp(),
-        maxSessions: parsedMaxSessions,
+        maxTurns: parsedMaxTurns,
         adminToken,
       });
-      setExportResults(Array.isArray(sessions) ? sessions : []);
+      setExportResults(Array.isArray(turns) ? turns : []);
     } catch (error) {
       setExportError(error?.message || 'Unable to export conversations.');
       setExportResults([]);
@@ -612,11 +613,11 @@ const AdminLogs = () => {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Conversations export</h2>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>JSON payload</span>
+            <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Rated answers export</h2>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>For retraining / auditing</span>
           </div>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem' }}>
-            Pull conversation sessions with ratings via <code>/admin/conversations/export</code>. Adjust filters below and hit export.
+            Pull rated turns via <code>/admin/conversations/export</code> so you can reuse the prompts/responses for retraining or investigation.
           </p>
 
           <div
@@ -628,12 +629,13 @@ const AdminLogs = () => {
             }}
           >
             <label style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-              Min rating
+              Min rating (optional)
               <input
                 type="number"
                 min="1"
                 value={minRating}
                 onChange={(event) => setMinRating(event.target.value)}
+                placeholder="Leave empty to include all"
                 style={{
                   width: '100%',
                   marginTop: '0.25rem',
@@ -659,12 +661,12 @@ const AdminLogs = () => {
               />
             </label>
             <label style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-              Max sessions
+              Max turns
               <input
                 type="number"
                 min="1"
-                value={maxSessionsInput}
-                onChange={(event) => setMaxSessionsInput(event.target.value)}
+                value={maxTurnsInput}
+                onChange={(event) => setMaxTurnsInput(event.target.value)}
                 style={{
                   width: '100%',
                   marginTop: '0.25rem',
@@ -694,12 +696,11 @@ const AdminLogs = () => {
             <p style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{exportError}</p>
           )}
 
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem' }}>
-            Filters → Min rating: {parsedMinRating}, Since: {sinceLabel}, Max sessions: {parsedMaxSessions}
-          </p>
-
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            Returned sessions: {exportResults.length}
+            Filters → Min rating: {minRatingParam ?? 'any'}, Since: {sinceLabel}, Max turns: {parsedMaxTurns}
+          </p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+            Returned turns: {exportResults.length}
           </p>
           <div
             style={{
@@ -716,20 +717,39 @@ const AdminLogs = () => {
             }}
           >
             {exportResults.length === 0 && (
-              <p>No exported sessions yet. Run the export to see results.</p>
+              <p>No exported turns yet. Run the export to see results.</p>
             )}
             {exportResults.length > 0 && (
               <ul style={{ listStyle: 'decimal inside', padding: 0, margin: 0 }}>
-                {exportResults.map((session, index) => {
-                  const preview = JSON.stringify(session, null, 2);
-                  const truncated =
-                    preview.length > 400 ? `${preview.slice(0, 400)}…` : preview;
+                {exportResults.map((turn, index) => {
+                  const promptPreview = turn.prompt?.slice(0, 120) ?? 'prompt unavailable';
+                  const responsePreview = turn.response?.slice(0, 120) ?? 'response unavailable';
+                  const details = [];
+                  if (turn.rating != null) {
+                    details.push(`rating: ${turn.rating}`);
+                  }
+                  if (turn.skill) {
+                    details.push(`skill: ${turn.skill}`);
+                  }
+                  if (turn.timestamp) {
+                    details.push(`ts: ${new Date(turn.timestamp * 1000).toLocaleString()}`);
+                  }
                   return (
-                    <li key={`${session.id ?? index}-${session.rating ?? 'x'}`} style={{ marginBottom: '0.6rem' }}>
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.25rem' }}>
-                        <strong>Rating:</strong> {session.rating ?? '—'}
+                    <li key={`${turn.turn_id ?? index}-${turn.rating ?? 'x'}`} style={{ marginBottom: '0.9rem' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '0.3rem' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>Turn</strong>
+                        {details.length > 0 && (
+                          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{details.join(' • ')}</span>
+                        )}
                       </div>
-                      <pre style={{ fontSize: '0.75rem', margin: 0, wordBreak: 'break-word' }}>{truncated}</pre>
+                      <div style={{ marginBottom: '0.35rem' }}>
+                        <strong style={{ fontSize: '0.8rem', color: '#a5b4fc' }}>Prompt:</strong>
+                        <p style={{ margin: 0, fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{promptPreview}</p>
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.8rem', color: '#67e8f9' }}>Response:</strong>
+                        <p style={{ margin: 0, fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{responsePreview}</p>
+                      </div>
                     </li>
                   );
                 })}

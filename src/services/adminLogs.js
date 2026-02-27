@@ -111,17 +111,19 @@ export const authenticateAdmin = async ({ password }) => {
 };
 
 export const exportConversations = async ({
-  minRating = 1,
+  minRating,
   sinceTimestamp,
-  maxSessions = 500,
+  maxTurns = 500,
   adminToken,
 }) => {
   const url = new URL(buildAdminUrl('/admin/conversations/export'), window.location.origin);
-  url.searchParams.set('min_rating', String(minRating));
+  if (typeof minRating === 'number') {
+    url.searchParams.set('min_rating', String(minRating));
+  }
   if (typeof sinceTimestamp === 'number') {
     url.searchParams.set('since_timestamp', String(sinceTimestamp));
   }
-  url.searchParams.set('max_sessions', String(maxSessions));
+  url.searchParams.set('max_turns', String(maxTurns));
 
   const response = await fetch(url.toString(), {
     method: 'GET',
@@ -134,5 +136,5 @@ export const exportConversations = async ({
   }
 
   const data = await response.json();
-  return data.sessions ?? [];
+  return data.turns ?? [];
 };

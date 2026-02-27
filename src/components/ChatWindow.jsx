@@ -3,6 +3,7 @@ import Prism from 'prismjs';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import 'prismjs/themes/prism-tomorrow.css';
+import { Link } from 'react-router-dom';
 
 import {
   DEFAULT_SKILL_ID,
@@ -16,7 +17,7 @@ import { runSkillConversation } from '../services/chatRuntime';
 import { linkifyPlainUrls, normalizeReferenceFormatting } from '../utils/messageFormatting';
 import { ContentCopyRounded, ThumbDownRounded, ThumbUpRounded } from '@mui/icons-material';
 
-const ChatWindow = () => {
+const ChatWindow = ({ isChatPage = false }) => {
   const [messages, setMessages] = useState([buildInitialAssistantMessage(DEFAULT_SKILL_ID)]);
   const [activeSkillId, setActiveSkillId] = useState(DEFAULT_SKILL_ID);
   const [input, setInput] = useState('');
@@ -187,7 +188,7 @@ const ChatWindow = () => {
     <div
       className="chat-window-container"
       style={{
-        maxWidth: '800px',
+        maxWidth: isChatPage ? '100%' : '800px',
         margin: '2rem auto 4rem',
         opacity: isLoaded ? 1 : 0,
         transform: isLoaded ? 'scale(1)' : 'scale(1.05)',
@@ -199,7 +200,8 @@ const ChatWindow = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        height: '500px',
+        height: isChatPage ? '100%' : '500px',
+        minHeight: isChatPage ? '1000px': 'initial'
       }}
     >
       <div
@@ -269,6 +271,19 @@ const ChatWindow = () => {
           >
             Reset
           </button>
+          {!isChatPage  && 
+            <Link to="/chat" style={{
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              borderRadius: '6px',
+              padding: '0.25rem 0.75rem',
+              color: 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'all 0.2s',
+            }}>
+              Open In chat page
+          </Link>}
         </div>
       </div>
 
