@@ -38,7 +38,6 @@ const PORTING_AUDITOR_SKILL = Object.freeze({
   suggestedPrompts: [
     'Analyze https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol and return a porting verdict.',
     'Analyze https://github.com/gmx-io/gmx-contracts and identify high_stylus_benefit vs low_stylus_impact targets.',
-    'Analyze ./contracts and identify high_stylus_benefit vs low_stylus_impact targets.',
     'Given this contract URL, return: stance (port now/pilot first/defer), impact class, drivers, and caveats.',
     'Is this contract a strong Stylus candidate in a hybrid Solidity + Rust architecture? Give a direct verdict.',
   ],
