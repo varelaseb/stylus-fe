@@ -10,6 +10,22 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
+        '/feedback': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
+        '/admin/logs/': {
+          target: proxyTarget,
+          changeOrigin: true
+        },
+         '/admin/conversations/export': {
+          target: proxyTarget,
+          changeOrigin: true
+        },
+        '/admin/auth': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
         '/skills': {
           target: proxyTarget,
           changeOrigin: true,

@@ -1,5 +1,5 @@
 import { appEnv } from '../config/env';
-import { getSkillSearchPath } from '../skills/catalog';
+import { getSkillSearchPath, getSkillById } from '../skills/catalog';
 
 const trimTrailingSlash = (value) => String(value || '').trim().replace(/\/+$/, '');
 
@@ -98,3 +98,19 @@ export const runSkillSearch = async ({ skillId, query }) => {
   const apiUrl = buildSkillSearchUrl(skillId);
   return postJson(apiUrl, { prompt: normalizedQuery });
 };
+
+export const buildFeedbackUrl = () => {
+  const base = getSkillsApiBase();
+  if (!base) {
+    return '/feedback';
+  }
+
+  return `${stripSkillsSuffix(base)}/feedback`;
+}
+
+export const postFeedback = async ({ skillId, response, rating, prompt }) => {
+  const skill = getSkillById(skillId).id;
+  const apiUrl = buildFeedbackUrl();
+
+  return postJson(apiUrl, { prompt, response, rating, skill }); 
+}

@@ -99,6 +99,7 @@ npm run build
 Workflow: `.github/workflows/deploy-production.yml`
 
 Required GitHub repository secrets:
+
 - `DEPLOY_HOST`
 - `DEPLOY_USER`
 - `DEPLOY_PORT` (optional, defaults to `22`)
