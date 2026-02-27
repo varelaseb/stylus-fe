@@ -1,7 +1,7 @@
 const DEFAULTS = Object.freeze({
   mcpTarget: 'local',
   mcpLocalBaseUrl: '',
-  mcpRemoteBaseUrl: 'https://api.siftstylus.xyz',
+  mcpRemoteBaseUrl: 'https://sifter.azule.xyz',
   skillsApiBaseUrl: '',
   openRouterProxyUrl: '/openrouter/chat/completions',
   model: 'google/gemini-2.0-flash-exp',
@@ -11,13 +11,18 @@ const DEFAULTS = Object.freeze({
 });
 
 const normalizeMcpTarget = (value) => (String(value || '').trim().toLowerCase() === 'remote' ? 'remote' : 'local');
+const remapLegacyApiHost = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/^https?:\/\/api\.siftstylus\.xyz(?=\/|$)/i, 'https://sifter.azule.xyz');
 
 const mcpTarget = normalizeMcpTarget(import.meta.env.VITE_MCP_TARGET || DEFAULTS.mcpTarget);
-const mcpLocalBaseUrl = import.meta.env.VITE_MCP_LOCAL_BASE_URL ?? DEFAULTS.mcpLocalBaseUrl;
-const mcpRemoteBaseUrl = import.meta.env.VITE_MCP_REMOTE_BASE_URL ?? DEFAULTS.mcpRemoteBaseUrl;
+const mcpLocalBaseUrl = remapLegacyApiHost(import.meta.env.VITE_MCP_LOCAL_BASE_URL ?? DEFAULTS.mcpLocalBaseUrl);
+const mcpRemoteBaseUrl = remapLegacyApiHost(import.meta.env.VITE_MCP_REMOTE_BASE_URL ?? DEFAULTS.mcpRemoteBaseUrl);
+const explicitSkillsApiBaseUrl = remapLegacyApiHost(import.meta.env.VITE_SKILLS_API_BASE_URL || '');
 
 const resolvedSkillsApiBaseUrl =
-  import.meta.env.VITE_SKILLS_API_BASE_URL ||
+  explicitSkillsApiBaseUrl ||
   (mcpTarget === 'remote' ? mcpRemoteBaseUrl : mcpLocalBaseUrl) ||
   DEFAULTS.skillsApiBaseUrl;
 
@@ -26,7 +31,7 @@ export const appEnv = Object.freeze({
   mcpLocalBaseUrl,
   mcpRemoteBaseUrl,
   skillsApiBaseUrl: resolvedSkillsApiBaseUrl,
-  openRouterProxyUrl: import.meta.env.VITE_OPENROUTER_PROXY_URL || DEFAULTS.openRouterProxyUrl,
+  openRouterProxyUrl: remapLegacyApiHost(import.meta.env.VITE_OPENROUTER_PROXY_URL || DEFAULTS.openRouterProxyUrl),
   model: import.meta.env.VITE_LLM_MODEL || DEFAULTS.model,
   fallbackModel: import.meta.env.VITE_LLM_FALLBACK_MODEL || DEFAULTS.fallbackModel,
   skillsInstallerPackage:

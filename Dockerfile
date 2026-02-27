@@ -9,7 +9,7 @@ COPY . .
 
 ARG VITE_MCP_TARGET=local
 ARG VITE_MCP_LOCAL_BASE_URL=
-ARG VITE_MCP_REMOTE_BASE_URL=https://api.siftstylus.xyz
+ARG VITE_MCP_REMOTE_BASE_URL=https://sifter.azule.xyz
 ARG VITE_SKILLS_API_BASE_URL=
 ARG VITE_OPENROUTER_PROXY_URL=/openrouter/chat/completions
 ARG VITE_LLM_MODEL=openai/gpt-4o-mini
