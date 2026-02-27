@@ -22,7 +22,7 @@ services:
       - traefik.http.routers.stylus-frontend.rule=Host(`siftstylus.xyz`) || Host(`www.siftstylus.xyz`)
       - traefik.http.routers.stylus-frontend.entrypoints=websecure
       - traefik.http.routers.stylus-frontend.tls=true
-      - traefik.http.routers.stylus-frontend.tls.certresolver=letsencrypt
+      - traefik.http.routers.stylus-frontend.tls.certresolver=public
       - traefik.http.services.stylus-frontend.loadbalancer.server.port=80
     networks:
       - web-ag-ui_default
