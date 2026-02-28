@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true
         },
+        '/admin/platform-feedback': {
+          target: proxyTarget,
+          changeOrigin: true
+        },
          '/admin/conversations/export': {
           target: proxyTarget,
           changeOrigin: true

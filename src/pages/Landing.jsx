@@ -17,6 +17,10 @@ const INSTALL_ALL_SKILLS_COMMAND = `npx ${appEnv.skillsInstallerPackage} \\
 const Landing = () => {
   const connectSectionRef = useRef(null);
   const connectHeadingRef = useRef(null);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackStatus, setFeedbackStatus] = useState('idle');
+  const [feedbackError, setFeedbackError] = useState('');
+  const [honeypotValue, setHoneypotValue] = useState('');
 
   useEffect(() => {
     const handleMouseMove = (event) => {
@@ -42,6 +46,59 @@ const Landing = () => {
       behavior: 'smooth',
     });
   };
+
+  const isFeedbackSubmitting = feedbackStatus === 'submitting';
+  const showFeedbackSuccess = feedbackStatus === 'success';
+  const showFeedbackError = feedbackStatus === 'error';
+
+  const handleFeedbackSubmit = async (event) => {
+    event.preventDefault();
+    if (honeypotValue.trim()) {
+      return;
+    }
+
+    if (!feedbackMessage.trim()) {
+      setFeedbackStatus('error');
+      setFeedbackError('Please share what you would like us to improve.');
+      return;
+    }
+
+    setFeedbackStatus('submitting');
+    setFeedbackError('');
+
+    const endpoint = appEnv.feedbackEndpoint;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: feedbackMessage.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      setFeedbackStatus('success');
+      setFeedbackMessage('');
+      setHoneypotValue('');
+    } catch (error) {
+      console.error(error);
+      setFeedbackStatus('error');
+      setFeedbackError('We could not send your note right now. Please try again soon.');
+    }
+  };
+
+  useEffect(() => {
+    if (showFeedbackSuccess && feedbackMessage.trim()) {
+      setFeedbackStatus('idle');
+      setFeedbackError('');
+    }
+  }, [feedbackMessage, showFeedbackSuccess]);
 
   return (
     <div className="landing-page" style={{ position: 'relative' }}>
@@ -293,6 +350,83 @@ const Landing = () => {
                 desc="Every response is grounded with links to source code, docs, and real project references."
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section feedback-section">
+        <div className="container" style={{ maxWidth: '1100px' }}>
+          <div className="feedback-inner">
+            <div className="feedback-copy">
+              <p
+                style={{
+                  textTransform: 'uppercase',
+                  fontSize: '0.8rem',
+                  letterSpacing: '0.3em',
+                  marginBottom: '0.75rem',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                Feedback
+              </p>
+              <h2
+                style={{
+                  fontSize: '2.25rem',
+                  fontWeight: 800,
+                  marginBottom: '1rem',
+                  lineHeight: 1.25,
+                }}
+              >
+                Give us your honest feedback and help us improve
+              </h2>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
+                Tell us what is working, what feels confusing, or what we should build next. Your answers are
+                anonymous.
+              </p>
+            </div>
+
+            <form className="feedback-card" onSubmit={handleFeedbackSubmit}>
+              <div className="feedback-field-group">
+                <label htmlFor="feedback-message">What should we improve?</label>
+                <textarea
+                  id="feedback-message"
+                  name="message"
+                  className="feedback-textarea"
+                  value={feedbackMessage}
+                  onChange={(event) => setFeedbackMessage(event.target.value)}
+                  placeholder="Share what would make Stylus feel more useful for you."
+                  rows={5}
+                  required
+                />
+              </div>
+
+              <input
+                type="text"
+                name="website"
+                autoComplete="off"
+                tabIndex={-1}
+                value={honeypotValue}
+                onChange={(event) => setHoneypotValue(event.target.value)}
+                className="feedback-honeypot"
+              />
+
+              <div className="feedback-status" aria-live="polite">
+                {showFeedbackSuccess
+                  ? 'Thanks for helping us improve!'
+                  : showFeedbackError
+                  ? feedbackError
+                  : 'No login required · takes ~30 seconds.'}
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isFeedbackSubmitting}
+                style={{ width: '100%', marginTop: '0.75rem' }}
+              >
+                {isFeedbackSubmitting ? 'Sending...' : 'Share feedback'}
+              </button>
+            </form>
           </div>
         </div>
       </section>

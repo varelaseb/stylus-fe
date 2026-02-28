@@ -5,6 +5,7 @@ import Chat from './pages/Chat';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminLogs from './pages/AdminLogs';
+import AdminFeedback from './pages/AdminFeedback';
 import './App.css';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/admin" element={<AdminLogs />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
           </Routes>
         </main>
         <Footer />
