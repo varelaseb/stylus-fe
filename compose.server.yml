@@ -19,7 +19,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=web-ag-ui_default
-      - traefik.http.routers.stylus-frontend.rule=Host(`siftstylus.xyz`) || Host(`www.siftstylus.xyz`)
+      - traefik.http.routers.stylus-frontend.rule=Host(`siftstylus.xyz`) || Host(`www.siftstylus.xyz`) || Host(`sifter.azule.xyz`) || Host(`stylus.azule.xyz`)
       - traefik.http.routers.stylus-frontend.entrypoints=websecure
       - traefik.http.routers.stylus-frontend.tls=true
       - traefik.http.routers.stylus-frontend.tls.certresolver=public
