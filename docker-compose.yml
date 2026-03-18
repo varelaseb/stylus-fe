@@ -9,12 +9,12 @@ services:
         VITE_MCP_REMOTE_BASE_URL: ${VITE_MCP_REMOTE_BASE_URL:-https://sifter.azule.xyz}
         VITE_SKILLS_API_BASE_URL: ${VITE_SKILLS_API_BASE_URL:-}
         VITE_OPENROUTER_PROXY_URL: ${VITE_OPENROUTER_PROXY_URL:-/openrouter/chat/completions}
-        VITE_LLM_MODEL: ${VITE_LLM_MODEL:-openai/gpt-4o-mini}
-        VITE_LLM_FALLBACK_MODEL: ${VITE_LLM_FALLBACK_MODEL:-anthropic/claude-3.5-haiku}
+        VITE_LLM_MODEL: ${VITE_LLM_MODEL:-google/gemini-2.0-flash-exp}
+        VITE_LLM_FALLBACK_MODEL: ${VITE_LLM_FALLBACK_MODEL:-openai/gpt-4o-mini}
         VITE_SKILLS_INSTALLER_PACKAGE: ${VITE_SKILLS_INSTALLER_PACKAGE:-sift-stylus}
         VITE_SKILLS_INSTALL_REPO: ${VITE_SKILLS_INSTALL_REPO:-getFairAI/angel-stylus-coding-assistant}
         VITE_PROJECT_GITHUB_URL: ${VITE_PROJECT_GITHUB_URL:-}
-        VITE_PROJECT_X_URL: ${VITE_PROJECT_X_URL:-}
+        VITE_PROJECT_X_URL: ${VITE_PROJECT_X_URL:-https://x.com/getFairAI}
     ports:
       - "${FRONTEND_PORT:-5173}:80"
     networks:

@@ -114,4 +114,4 @@ Required GitHub repository secrets:
 - `VITE_SKILLS_INSTALLER_PACKAGE` (optional)
 - `VITE_SKILLS_INSTALL_REPO` (optional)
 - `VITE_PROJECT_GITHUB_URL` (optional)
-- `VITE_PROJECT_X_URL` (optional)
+- `VITE_PROJECT_X_URL` (optional, defaults to `https://x.com/getFairAI`)

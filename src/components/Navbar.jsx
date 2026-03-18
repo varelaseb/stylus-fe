@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
-
-const GITHUB_URL = import.meta.env.VITE_PROJECT_GITHUB_URL || 'https://github.com/placeholder';
-const X_URL = import.meta.env.VITE_PROJECT_X_URL || 'https://x.com/placeholder';
+import { appEnv } from '../config/env';
 
 const Navbar = () => {
     const [isVisible, setIsVisible] = useState(true);
@@ -51,7 +49,7 @@ const Navbar = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                     <a
-                        href={GITHUB_URL}
+                        href={appEnv.projectGithubUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="GitHub"
@@ -62,7 +60,7 @@ const Navbar = () => {
                         </svg>
                     </a>
                     <a
-                        href={X_URL}
+                        href={appEnv.projectXUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="X"

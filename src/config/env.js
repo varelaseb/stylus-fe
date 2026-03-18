@@ -8,6 +8,8 @@ const DEFAULTS = Object.freeze({
   fallbackModel: 'openai/gpt-4o-mini',
   skillsInstallerPackage: 'sift-stylus',
   skillsInstallRepo: 'getFairAI/angel-stylus-coding-assistant',
+  projectGithubUrl: 'https://github.com/placeholder',
+  projectXUrl: 'https://x.com/getFairAI',
 });
 
 const normalizeMcpTarget = (value) => (String(value || '').trim().toLowerCase() === 'remote' ? 'remote' : 'local');
@@ -37,4 +39,6 @@ export const appEnv = Object.freeze({
   skillsInstallerPackage:
     import.meta.env.VITE_SKILLS_INSTALLER_PACKAGE || DEFAULTS.skillsInstallerPackage,
   skillsInstallRepo: import.meta.env.VITE_SKILLS_INSTALL_REPO || DEFAULTS.skillsInstallRepo,
+  projectGithubUrl: import.meta.env.VITE_PROJECT_GITHUB_URL || DEFAULTS.projectGithubUrl,
+  projectXUrl: import.meta.env.VITE_PROJECT_X_URL || DEFAULTS.projectXUrl,
 });
